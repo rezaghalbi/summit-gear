@@ -1,0 +1,86 @@
+// apps/api/prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 1. Model User (Penyewa & Admin)
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String   // Akan di-hash nanti
+  name      String
+  role      Role     @default(CUSTOMER)
+  createdAt DateTime @default(now())
+  
+  // Relasi: User bisa punya banyak booking
+  bookings  Booking[]
+}
+
+// 2. Model Gear (Barang yang disewakan)
+model Gear {
+  id          String   @id @default(uuid())
+  name        String   // Misal: "Tenda Eiger 4P"
+  category    Category // Misal: TENT, CARRIER
+  pricePerDay Int      // Harga sewa harian
+  stock       Int      // Jumlah barang tersedia
+  description String?
+  imageUrl    String?
+  
+  // Relasi
+  bookingItems BookingItem[]
+}
+
+// 3. Model Booking (Transaksi Sewa)
+model Booking {
+  id          String        @id @default(uuid())
+  startDate   DateTime
+  endDate     DateTime
+  totalPrice  Int
+  status      BookingStatus @default(PENDING)
+  createdAt   DateTime      @default(now())
+
+  // Relasi
+  userId      String
+  user        User          @relation(fields: [userId], references: [id])
+  items       BookingItem[]
+}
+
+// Tabel Perantara (Agar 1 Booking bisa sewa banyak alat beda jenis)
+model BookingItem {
+  id        String @id @default(uuid())
+  quantity  Int
+  price     Int    // Harga saat transaksi terjadi (snapshot)
+  
+  bookingId String
+  booking   Booking @relation(fields: [bookingId], references: [id])
+  gearId    String
+  gear      Gear    @relation(fields: [gearId], references: [id])
+}
+
+// Enum (Pilihan Tetap)
+enum Role {
+  CUSTOMER
+  ADMIN
+}
+
+enum Category {
+  TENT
+  CARRIER
+  SHOES
+  ACCESSORIES
+  COOKING
+}
+
+enum BookingStatus {
+  PENDING   // Belum bayar
+  PAID      // Sudah bayar, menunggu ambil
+  PICKED_UP // Barang dibawa
+  RETURNED  // Barang sudah kembali
+  CANCELLED
+}
