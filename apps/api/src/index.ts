@@ -1,7 +1,7 @@
 import app from './app';
 import dotenv from 'dotenv';
 
-dotenv.config(); // Baca file .env
+dotenv.config(); 
 
 const PORT = process.env.PORT || 8000;
 

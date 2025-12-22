@@ -1,3 +1,4 @@
+
 import express, { Express, Request, Response } from 'express';
 import cors from 'cors';
 import authRoutes from './routes/auth.route';
@@ -14,6 +15,5 @@ app.get('/', (req, res) => {
 });
 
 app.use('/api/auth', authRoutes);
-
 
 export default app;
