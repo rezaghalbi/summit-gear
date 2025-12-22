@@ -14,7 +14,7 @@ dist/
 .DS_Store
 *.log
 
-# Environment Variables (JANGAN PERNAH UPLOAD INI)
+# Environment Variables 
 .env
 .env.local
 .env.development.local
