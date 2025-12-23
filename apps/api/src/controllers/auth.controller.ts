@@ -5,6 +5,7 @@ import jwt from 'jsonwebtoken';
 
 const prisma = new PrismaClient();
 
+//	Fitur Register User
 export const register = async (req: Request, res: Response) => {
   try {
     const { name, email, password } = req.body;
@@ -50,11 +51,11 @@ export const register = async (req: Request, res: Response) => {
   }
 };
 
+//	Fitur Login User
 export const login = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
 
-    // 1. Cek apakah User ada?
     const user = await prisma.user.findUnique({
       where: { email },
     });
@@ -88,5 +89,18 @@ export const login = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Login Error:', error);
     res.status(500).json({ message: 'Internal Server Error' });
+  }
+};
+
+export const getProfile = async (req: Request, res: Response) => {
+  try {
+    const user = req.user;
+
+    res.json({
+      message: 'Ini profil rahasia Anda',
+      user: user,
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Error' });
   }
 };
