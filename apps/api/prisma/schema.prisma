@@ -25,15 +25,19 @@ model User {
 // 2. Model Gear (Barang yang disewakan)
 model Gear {
   id          String   @id @default(uuid())
-  name        String   // Misal: "Tenda Eiger 4P"
-  category    Category // Misal: TENT, CARRIER
-  pricePerDay Int      // Harga sewa harian
-  stock       Int      // Jumlah barang tersedia
+  name        String   
+  
+  pricePerDay Int      
+  stock       Int      
   description String?
   imageUrl    String?
   
   // Relasi
   bookingItems BookingItem[]
+  categoryId  Int
+  category    Category @relation(fields: [categoryId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 // 3. Model Booking (Transaksi Sewa)
@@ -69,13 +73,7 @@ enum Role {
   ADMIN
 }
 
-enum Category {
-  TENT
-  CARRIER
-  SHOES
-  ACCESSORIES
-  COOKING
-}
+
 
 enum BookingStatus {
   PENDING   // Belum bayar
@@ -83,4 +81,14 @@ enum BookingStatus {
   PICKED_UP // Barang dibawa
   RETURNED  // Barang sudah kembali
   CANCELLED
+}
+
+model Category {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  gears     Gear[]
+
+ 
 }
