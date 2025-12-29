@@ -56,15 +56,18 @@ export default async function CatalogPage() {
                   {item.name}
                 </h3>
                 <p className="text-orange-600 font-bold mt-1">
-                  Rp {item.pricePerDay.toLocaleString('id-ID')}{' '}
+                  Rp {(item.pricePerDay || 0).toLocaleString('id-ID')}{' '}
                   <span className="text-xs text-slate-500 font-normal">
                     / hari
                   </span>
                 </p>
 
-                <button className="mt-4 w-full bg-slate-900 text-white py-2 rounded-lg text-sm font-medium hover:bg-orange-600 transition">
+                <Link
+                  href={`/catalog/${item.id}`}
+                  className="block mt-4 w-full bg-slate-900 text-white text-center py-2 rounded-lg text-sm font-medium hover:bg-orange-600 transition"
+                >
                   Lihat Detail
-                </button>
+                </Link>
               </div>
             </div>
           ))}
