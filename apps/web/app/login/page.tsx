@@ -1,17 +1,14 @@
 'use client';
 
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import Link from 'next/link';
 import Cookies from 'js-cookie';
 
 export default function LoginPage() {
-  const router = useRouter();
-
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -19,94 +16,129 @@ export default function LoginPage() {
     setError('');
 
     try {
+      // 1. Kirim Data ke Backend
       const res = await fetch('http://localhost:8000/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
 
-      const data = await res.json();
+      const responseJson = await res.json();
+
+      // Debug: Intip isi respons di Console Browser
+      console.log('🔍 RESPONS BACKEND:', responseJson);
 
       if (!res.ok) {
-        throw new Error(data.message || 'Gagal login. Periksa email/password.');
+        throw new Error(responseJson.message || 'Gagal login.');
       }
 
-      // --- LOGIKA PENYIMPANAN TOKEN ---
-      Cookies.set('token', data.accessToken, { expires: 1 });
-      Cookies.set('user', JSON.stringify(data.user), { expires: 1 });
+      // 2. AMBIL TOKEN (Cari di semua kemungkinan tempat)
+      // Backend Anda kemungkinan besar mengirim di responseJson.data.token
+      let token =
+        responseJson.accessToken ||
+        responseJson.token ||
+        (responseJson.data && responseJson.data.accessToken) ||
+        (responseJson.data && responseJson.data.token);
 
-      console.log('Login Sukses! Token:', data.accessToken);
-      if (data.user) {
-        Cookies.set('user', JSON.stringify(data.user), { expires: 1 });
+      // 3. AMBIL DATA USER
+      let userData =
+        responseJson.user || (responseJson.data && responseJson.data.user);
+
+      // Cek apakah token ketemu
+      if (!token || token === 'undefined') {
+        // Jika masih gagal, kita log struktur datanya biar tahu salahnya dimana
+        console.error('Struktur JSON Backend:', responseJson);
+        throw new Error('Token tidak ditemukan di dalam respons backend.');
+      }
+
+      // Bersihkan token jika ada tanda kutip string yang ikut
+      if (typeof token === 'string') {
+        token = token.replace(/"/g, '');
+      }
+
+      console.log('✅ Token Valid ditemukan:', token.substring(0, 10) + '...');
+
+      // 4. SIMPAN KE COOKIE (Path '/' Wajib)
+      Cookies.set('token', token, { expires: 1, path: '/' });
+
+      // Simpan User (Buat data dummy jika backend lupa kirim user object)
+      if (userData) {
+        Cookies.set('user', JSON.stringify(userData), {
+          expires: 1,
+          path: '/',
+        });
       } else {
-        const fallbackUser = { name: 'Pengguna', email: email };
-        Cookies.set('user', JSON.stringify(fallbackUser), { expires: 1 });
+        Cookies.set('user', JSON.stringify({ name: 'User', email }), {
+          expires: 1,
+          path: '/',
+        });
       }
-      // Pindah ke Katalog
-      alert('Login Berhasil!');
-      window.location.href = '/catalog';
+
+      console.log('✅ Cookie tersimpan. Mengalihkan ke Dashboard...');
+
+      // 5. HARD RELOAD ke Dashboard
+      // Menggunakan window.location agar Middleware membaca cookie baru
+      window.location.href = '/dashboard';
     } catch (err: any) {
+      console.error('Login Error:', err);
       setError(err.message);
-    } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-slate-50 px-4">
-      <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 w-full max-w-md">
+    <main className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
+      <div className="bg-white p-8 rounded-2xl shadow-lg w-full max-w-md border border-slate-100">
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold text-slate-900">
             Selamat Datang Kembali
           </h1>
-          <p className="text-slate-500 text-sm mt-2">
-            Masuk untuk mulai menyewa alat
+          <p className="text-slate-500 mt-2">
+            Masuk untuk mengelola penyewaan alat
           </p>
         </div>
 
         {error && (
-          <div className="bg-red-100 text-red-600 text-sm p-3 rounded-lg mb-4 text-center">
+          <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm mb-6 text-center font-medium border border-red-100">
             {error}
           </div>
         )}
 
-        <form onSubmit={handleLogin} className="space-y-4">
+        <form onSubmit={handleLogin} className="space-y-5">
           <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1">
+            <label className="block text-sm font-semibold text-slate-700 mb-1">
               Email
             </label>
             <input
               type="email"
               required
-              className="w-full border border-slate-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500 outline-none"
+              className="w-full border border-slate-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition"
               placeholder="nama@email.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              disabled={isLoading}
             />
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1">
+            <label className="block text-sm font-semibold text-slate-700 mb-1">
               Password
             </label>
             <input
               type="password"
               required
-              className="w-full border border-slate-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500 outline-none"
+              className="w-full border border-slate-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition"
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              disabled={isLoading}
             />
           </div>
 
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full bg-slate-900 text-white font-bold py-3 rounded-lg hover:bg-orange-600 transition disabled:bg-slate-400"
+            className="w-full bg-slate-900 text-white font-bold py-3 rounded-lg hover:bg-orange-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isLoading ? 'Memproses...' : 'Masuk'}
+            {isLoading ? 'Memproses...' : 'Masuk Sekarang'}
           </button>
         </form>
 
@@ -116,7 +148,7 @@ export default function LoginPage() {
             href="/register"
             className="text-orange-600 font-bold hover:underline"
           >
-            Daftar Sekarang
+            Daftar di sini
           </Link>
         </p>
       </div>
