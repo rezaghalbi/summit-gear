@@ -139,4 +139,25 @@ export const updateBookingStatus = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Internal Server Error' });
   }
 };
+export const getBookingById = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
 
+    const booking = await prisma.booking.findUnique({
+      where: { id: id }, // Ingat: JANGAN pakai Number(id) karena ID Anda UUID
+      include: {
+        user: true,
+        items: { include: { gear: true } },
+      },
+    });
+
+    if (!booking) {
+      return res.status(404).json({ message: 'Booking not found' });
+    }
+
+    res.status(200).json({ data: booking });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+};
