@@ -1,131 +1,141 @@
 'use client';
 
-import Image from 'next/image';
-import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { Gear } from '@/types/gear';
+import Link from 'next/link';
+import Image from 'next/image';
+import { ShoppingCart, MagnifyingGlass, Funnel } from '@phosphor-icons/react';
+// Import Context
+import { useCart } from '../../context/CartContext';
 
 export default function CatalogPage() {
-  const [gears, setGears] = useState<Gear[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(''); // Tambah state untuk pesan error
+  const [gears, setGears] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [search, setSearch] = useState('');
+
+  // Panggil fungsi addToCart dari Context
+  const { addToCart } = useCart();
 
   useEffect(() => {
-    async function fetchGears() {
+    const fetchGears = async () => {
       try {
-        console.log('Mencoba mengambil data...');
-
         const res = await fetch('http://localhost:8000/api/gears');
-
-        if (!res.ok) {
-          throw new Error(`Gagal Fetch: ${res.status} ${res.statusText}`);
-        }
-
-        const responseJson = await res.json(); // Ganti nama variabel biar jelas
-        console.log('Data mentah dari backend:', responseJson);
-
-        // --- PERBAIKAN UTAMA DI SINI ---
-        // Kita ambil .data. Jika kosong, kita kasih array kosong [] biar tidak error .map
-        const gearsArray = responseJson.data || [];
-
-        setGears(gearsArray);
-      } catch (err: any) {
-        console.error('🔥 ERROR PARAH:', err);
-        setError(err.message || 'Gagal mengambil data dari server');
+        const json = await res.json();
+        if (res.ok) setGears(json.data);
+      } catch (error) {
+        console.error(error);
       } finally {
-        setLoading(false);
+        setIsLoading(false);
       }
-    }
-
+    };
     fetchGears();
   }, []);
 
-  if (loading)
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-xl font-bold animate-pulse text-orange-600">
-          Sedang Memuat Data...
-        </div>
-      </div>
-    );
-
-  // Jika Error, tampilkan pesan merah, jangan loading terus
-  if (error)
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-4">
-        <div className="bg-red-100 text-red-700 p-4 rounded-lg text-center max-w-md">
-          <h3 className="font-bold text-lg mb-2">Terjadi Kesalahan</h3>
-          <p>{error}</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="mt-4 bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
-          >
-            Coba Lagi
-          </button>
-        </div>
-        <p className="mt-4 text-slate-500 text-sm">
-          Pastikan Server Backend (port 8000) sudah menyala.
-        </p>
-      </div>
-    );
+  // Filter Barang
+  const filteredGears = gears.filter((g) =>
+    g.name.toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
-    <main className="container mx-auto px-4 py-8">
-      <div className="flex justify-between items-end mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900">Katalog Alat</h1>
-          <p className="text-slate-500 mt-2">
-            Pilih perlengkapan terbaik untuk petualanganmu
-          </p>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {gears.map((item) => (
-          <div
-            key={item.id}
-            className="group bg-white rounded-xl border border-slate-200 overflow-hidden hover:shadow-lg transition-all duration-300"
-          >
-            {/* GAMBAR */}
-            <div className="relative h-48 bg-slate-100 overflow-hidden">
-              <Image
-                src={
-                  item.imageUrl
-                    ? `http://localhost:8000${item.imageUrl}`
-                    : 'https://placehold.co/600x400?text=No+Image'
-                }
-                alt={item.name}
-                fill
-                className="object-cover group-hover:scale-105 transition-transform duration-500"
-                unoptimized
-              />
-              <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm px-2 py-1 rounded text-xs font-bold text-slate-700">
-                {item.category?.name || 'Outdoor'}
-              </div>
-            </div>
-
-            {/* KONTEN */}
-            <div className="p-4">
-              <h3 className="font-bold text-lg text-slate-900 mb-1 truncate">
-                {item.name}
-              </h3>
-              <p className="text-orange-600 font-bold mb-3">
-                Rp {item.pricePerDay.toLocaleString('id-ID')}
-                <span className="text-xs text-slate-500 font-normal">
-                  {' '}
-                  / hari
-                </span>
-              </p>
-
-              <Link
-                href={`/catalog/${item.id}`}
-                className="block w-full bg-slate-900 text-white text-center py-2 rounded-lg text-sm font-medium hover:bg-orange-600 transition"
-              >
-                Lihat Detail
-              </Link>
-            </div>
+    <main className="min-h-screen bg-slate-50 py-10 px-4">
+      <div className="container mx-auto max-w-6xl">
+        {/* HEADER & SEARCH */}
+        <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+          <div>
+            <h1 className="text-3xl font-black text-slate-900">
+              Katalog Alat ⛺
+            </h1>
+            <p className="text-slate-500">Pilih perlengkapan petualanganmu</p>
           </div>
-        ))}
+          <div className="relative w-full md:w-96">
+            <MagnifyingGlass
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+              size={20}
+            />
+            <input
+              type="text"
+              placeholder="Cari Tenda, Tas, Sepatu..."
+              className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-orange-500 outline-none"
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+        </div>
+
+        {/* GRID BARANG */}
+        {isLoading ? (
+          <div className="text-center py-20 text-slate-400">
+            Memuat Katalog...
+          </div>
+        ) : filteredGears.length === 0 ? (
+          <div className="text-center py-20 text-slate-400">
+            Barang tidak ditemukan.
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {filteredGears.map((gear) => (
+              <div
+                key={gear.id}
+                className="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-lg transition group overflow-hidden flex flex-col"
+              >
+                {/* GAMBAR */}
+                <Link
+                  href={`/catalog/${gear.id}`}
+                  className="relative h-48 w-full bg-slate-100 block"
+                >
+                  {gear.imageUrl && (
+                    <Image
+                      src={
+                        gear.imageUrl.startsWith('http')
+                          ? gear.imageUrl
+                          : `http://localhost:8000${gear.imageUrl}`
+                      }
+                      alt={gear.name}
+                      fill
+                      className="object-cover group-hover:scale-105 transition duration-500"
+                      unoptimized
+                    />
+                  )}
+                  {gear.stock < 1 && (
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center text-white font-bold">
+                      STOK HABIS
+                    </div>
+                  )}
+                </Link>
+
+                {/* INFO */}
+                <div className="p-4 flex flex-col flex-1">
+                  <div className="flex-1">
+                    <h3
+                      className="font-bold text-slate-900 line-clamp-1"
+                      title={gear.name}
+                    >
+                      {gear.name}
+                    </h3>
+                    <p className="text-sm text-slate-500 mb-3">
+                      {gear.category?.name || 'Outdoor'}
+                    </p>
+                  </div>
+
+                  <div className="flex items-center justify-between mt-2">
+                    <div className="text-orange-600 font-bold">
+                      Rp {gear.pricePerDay.toLocaleString('id-ID')}
+                      <span className="text-xs text-slate-400">/hr</span>
+                    </div>
+
+                    {/* TOMBOL ADD TO CART MINI */}
+                    <button
+                      onClick={() => addToCart(gear)}
+                      disabled={gear.stock < 1}
+                      className="bg-slate-900 text-white p-2 rounded-lg hover:bg-orange-600 transition disabled:bg-slate-300 disabled:cursor-not-allowed"
+                      title="Tambah ke Keranjang"
+                    >
+                      <ShoppingCart size={18} weight="fill" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </main>
   );
