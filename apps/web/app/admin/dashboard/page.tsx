@@ -9,13 +9,23 @@ import {
   XCircle,
   Package,
   Plus,
-  Archive, // Menggunakan ArchiveBox agar konsisten
+  Archive,
+  Users,
+  MagnifyingGlass,
+  Funnel,
+  SortAscending,
+  SortDescending,
 } from '@phosphor-icons/react';
 
 export default function AdminDashboard() {
   const router = useRouter();
   const [bookings, setBookings] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  // --- STATE FILTER & SEARCH ---
+  const [search, setSearch] = useState('');
+  const [filterStatus, setFilterStatus] = useState('ALL'); // ALL, PENDING, PAID, CANCELLED
+  const [sortOrder, setSortOrder] = useState('newest'); // newest, oldest
 
   // 1. Fetch Data
   const fetchBookings = async () => {
@@ -39,13 +49,31 @@ export default function AdminDashboard() {
     fetchBookings();
   }, [router]);
 
-  // 2. Handle Status Update
-  const handleUpdateStatus = async (bookingId: number, newStatus: string) => {
+  // 2. LOGIKA FILTERING & SORTING 🧠
+  const filteredBookings = bookings
+    .filter((booking) => {
+      // Filter Status
+      if (filterStatus !== 'ALL' && booking.status !== filterStatus)
+        return false;
+
+      // Filter Search (ID atau Nama User)
+      const query = search.toLowerCase();
+      const matchId = String(booking.id).toLowerCase().includes(query); // Support UUID/Number
+      const matchName = booking.user?.name?.toLowerCase().includes(query) || '';
+      return matchId || matchName;
+    })
+    .sort((a, b) => {
+      // Sort Tanggal
+      const dateA = new Date(a.createdAt).getTime();
+      const dateB = new Date(b.createdAt).getTime();
+      return sortOrder === 'newest' ? dateB - dateA : dateA - dateB;
+    });
+
+  // 3. Handle Update Status
+  const handleUpdateStatus = async (bookingId: string, newStatus: string) => {
     const token = Cookies.get('token');
     const confirmMsg =
-      newStatus === 'PAID'
-        ? 'Tandai pesanan ini LUNAS?'
-        : 'Batalkan pesanan ini?';
+      newStatus === 'PAID' ? 'Tandai LUNAS?' : 'Batalkan pesanan?';
     if (!confirm(confirmMsg)) return;
 
     try {
@@ -61,7 +89,7 @@ export default function AdminDashboard() {
         }
       );
       if (res.ok) {
-        alert('Status berhasil diperbarui!');
+        alert('Status diperbarui!');
         fetchBookings();
       }
     } catch (error) {
@@ -85,7 +113,7 @@ export default function AdminDashboard() {
   return (
     <main className="min-h-screen bg-slate-50 py-10 px-4">
       <div className="container mx-auto max-w-6xl">
-        {/* HEADER DASHBOARD */}
+        {/* HEADER */}
         <div className="flex flex-col md:flex-row justify-between items-center mb-10 gap-4">
           <div>
             <h1 className="text-3xl font-bold text-slate-900">
@@ -95,38 +123,29 @@ export default function AdminDashboard() {
               Pantau pesanan dan kelola inventaris
             </p>
           </div>
-
           <div className="flex gap-3">
-            {/* TOMBOL KELOLA BARANG */}
+            <Link
+              href="/admin/users"
+              className="bg-white text-slate-700 border border-slate-300 px-4 py-2 rounded-xl font-bold hover:bg-slate-50 transition flex items-center gap-2 text-sm shadow-sm"
+            >
+              <Users weight="bold" size={18} /> Users
+            </Link>
             <Link
               href="/admin/gears"
-              className="bg-white text-slate-700 border border-slate-300 px-5 py-3 rounded-xl font-bold hover:bg-slate-50 hover:text-slate-900 transition flex items-center gap-2 shadow-sm"
+              className="bg-white text-slate-700 border border-slate-300 px-4 py-2 rounded-xl font-bold hover:bg-slate-50 transition flex items-center gap-2 text-sm shadow-sm"
             >
-              <Archive weight="bold" size={18} /> Kelola Barang
+              <Archive weight="bold" size={18} /> Barang
             </Link>
-
-            {/* TOMBOL TAMBAH BARANG */}
             <Link
               href="/admin/gears/create"
-              className="bg-slate-900 text-white px-5 py-3 rounded-xl font-bold hover:bg-orange-600 transition flex items-center gap-2 shadow-lg shadow-slate-200"
+              className="bg-slate-900 text-white px-4 py-2 rounded-xl font-bold hover:bg-orange-600 transition flex items-center gap-2 text-sm shadow-lg shadow-slate-200"
             >
-              <Plus weight="bold" size={18} /> Tambah Baru
+              <Plus weight="bold" size={18} /> Tambah
             </Link>
-
-            {/* LOGOUT */}
-            <button
-              onClick={() => {
-                Cookies.remove('token');
-                router.push('/login');
-              }}
-              className="px-5 py-3 text-red-600 font-bold hover:bg-red-50 rounded-xl transition"
-            >
-              Logout
-            </button>
           </div>
         </div>
 
-        {/* STATISTIK */}
+        {/* STATISTIK CARDS */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
             <div className="w-12 h-12 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center font-bold text-xl">
@@ -157,13 +176,61 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* TABEL PESANAN */}
-        <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
-          <div className="p-6 border-b border-slate-100">
-            <h2 className="text-xl font-bold text-slate-800">
-              Daftar Pesanan Masuk
-            </h2>
+        {/* --- TOOLBAR FILTER & SEARCH --- */}
+        <div className="bg-white p-4 rounded-t-3xl border-b border-slate-100 flex flex-col md:flex-row gap-4 justify-between items-center shadow-sm">
+          {/* Kiri: Search */}
+          <div className="relative w-full md:w-1/3">
+            <MagnifyingGlass
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+              size={20}
+            />
+            <input
+              type="text"
+              placeholder="Cari ID atau Nama User..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-900 outline-none transition"
+            />
           </div>
+
+          {/* Kanan: Filter & Sort */}
+          <div className="flex gap-2 w-full md:w-auto overflow-x-auto pb-2 md:pb-0">
+            {/* Filter Tabs */}
+            <div className="flex bg-slate-100 p-1 rounded-xl">
+              {['ALL', 'PENDING', 'PAID', 'CANCELLED'].map((status) => (
+                <button
+                  key={status}
+                  onClick={() => setFilterStatus(status)}
+                  className={`px-4 py-1.5 rounded-lg text-xs font-bold transition ${
+                    filterStatus === status
+                      ? 'bg-white text-slate-900 shadow-sm'
+                      : 'text-slate-500 hover:text-slate-700'
+                  }`}
+                >
+                  {status === 'ALL' ? 'Semua' : status}
+                </button>
+              ))}
+            </div>
+
+            {/* Sort Button */}
+            <button
+              onClick={() =>
+                setSortOrder(sortOrder === 'newest' ? 'oldest' : 'newest')
+              }
+              className="flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 transition font-bold text-xs whitespace-nowrap"
+            >
+              {sortOrder === 'newest' ? (
+                <SortDescending size={18} />
+              ) : (
+                <SortAscending size={18} />
+              )}
+              {sortOrder === 'newest' ? 'Terbaru' : 'Terlama'}
+            </button>
+          </div>
+        </div>
+
+        {/* TABEL DATA */}
+        <div className="bg-white rounded-b-3xl shadow-sm border border-slate-200 border-t-0 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
@@ -183,20 +250,20 @@ export default function AdminDashboard() {
                       Memuat...
                     </td>
                   </tr>
-                ) : bookings.length === 0 ? (
+                ) : filteredBookings.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="p-8 text-center text-slate-400">
-                      Belum ada pesanan masuk.
+                      Data tidak ditemukan.
                     </td>
                   </tr>
                 ) : (
-                  bookings.map((booking) => (
+                  filteredBookings.map((booking) => (
                     <tr
                       key={booking.id}
                       className="hover:bg-slate-50 transition"
                     >
-                      <td className="p-4 font-mono font-bold text-slate-400">
-                        #{booking.id}
+                      <td className="p-4 font-mono font-bold text-slate-400 text-xs">
+                        #{booking.id.toString().slice(0, 8)}...
                       </td>
                       <td className="p-4">
                         <div className="font-bold">{booking.user?.name}</div>
@@ -205,11 +272,10 @@ export default function AdminDashboard() {
                         </div>
                       </td>
                       <td className="p-4 text-xs text-slate-500">
-                        {new Date(booking.startDate).toLocaleDateString(
-                          'id-ID'
-                        )}{' '}
-                        -{' '}
-                        {new Date(booking.endDate).toLocaleDateString('id-ID')}
+                        {new Date(booking.createdAt).toLocaleDateString(
+                          'id-ID',
+                          { day: 'numeric', month: 'short' }
+                        )}
                       </td>
                       <td className="p-4 font-bold text-slate-900">
                         Rp {booking.totalPrice.toLocaleString('id-ID')}
@@ -223,20 +289,15 @@ export default function AdminDashboard() {
                           {booking.status}
                         </span>
                       </td>
-
-                      {/* --- UPDATE BAGIAN INI --- */}
                       <td className="p-4 text-center">
                         <div className="flex justify-center gap-2">
-                          {/* 1. Tombol Detail (Selalu Muncul) */}
                           <Link
                             href={`/admin/bookings/${booking.id}`}
                             className="p-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-900 hover:text-white transition"
-                            title="Lihat Detail Struk"
+                            title="Detail"
                           >
-                            <span className="font-bold text-xs">Detail</span>
+                            <MagnifyingGlass weight="bold" size={16} />
                           </Link>
-
-                          {/* 2. Tombol Aksi (Hanya jika PENDING) */}
                           {booking.status === 'PENDING' && (
                             <>
                               <button
@@ -244,29 +305,32 @@ export default function AdminDashboard() {
                                   handleUpdateStatus(booking.id, 'PAID')
                                 }
                                 className="p-2 bg-green-100 text-green-600 rounded hover:bg-green-600 hover:text-white transition"
-                                title="Terima (Lunas)"
                               >
-                                <CheckCircle weight="fill" />
+                                <CheckCircle weight="fill" size={16} />
                               </button>
                               <button
                                 onClick={() =>
                                   handleUpdateStatus(booking.id, 'CANCELLED')
                                 }
                                 className="p-2 bg-red-100 text-red-600 rounded hover:bg-red-600 hover:text-white transition"
-                                title="Tolak (Cancel)"
                               >
-                                <XCircle weight="fill" />
+                                <XCircle weight="fill" size={16} />
                               </button>
                             </>
                           )}
                         </div>
                       </td>
-                      {/* ------------------------- */}
                     </tr>
                   ))
                 )}
               </tbody>
             </table>
+          </div>
+
+          {/* Footer Info Jumlah Data */}
+          <div className="p-4 bg-slate-50 border-t border-slate-100 text-xs text-slate-500 text-center">
+            Menampilkan {filteredBookings.length} dari {bookings.length} total
+            pesanan
           </div>
         </div>
       </div>
