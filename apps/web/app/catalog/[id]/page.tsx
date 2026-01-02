@@ -4,8 +4,15 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import Cookies from 'js-cookie';
-import { ArrowLeft, Calendar, ShoppingBag } from '@phosphor-icons/react';
+import {
+  ArrowLeft,
+  ShoppingCart,
+  Minus,
+  Plus,
+  CheckCircle,
+} from '@phosphor-icons/react';
+// Import Context
+import { useCart } from '../../../context/CartContext';
 
 export default function GearDetailPage() {
   const params = useParams();
@@ -13,23 +20,19 @@ export default function GearDetailPage() {
   const [gear, setGear] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // State Form Booking
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [totalPrice, setTotalPrice] = useState(0);
+  // State Lokal untuk Quantity
+  const [qty, setQty] = useState(1);
 
-  // 1. Ambil Data Barang
+  // Panggil Context
+  const { addToCart } = useCart();
+
   useEffect(() => {
     const fetchGear = async () => {
       try {
         const res = await fetch(`http://localhost:8000/api/gears/${params.id}`);
         const json = await res.json();
-        if (res.ok) {
-          setGear(json.data);
-        } else {
-          alert('Barang tidak ditemukan!');
-          router.push('/');
-        }
+        if (res.ok) setGear(json.data);
+        else router.push('/catalog');
       } catch (error) {
         console.error(error);
       } finally {
@@ -39,80 +42,40 @@ export default function GearDetailPage() {
     if (params.id) fetchGear();
   }, [params.id, router]);
 
-  // 2. Hitung Estimasi Harga (Frontend Only)
-  useEffect(() => {
-    if (startDate && endDate && gear) {
-      const start = new Date(startDate);
-      const end = new Date(endDate);
-      const diffTime = Math.abs(end.getTime() - start.getTime());
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  const handleAddToCart = () => {
+    if (!gear) return;
 
-      const duration = diffDays === 0 ? 1 : diffDays;
-      setTotalPrice(duration * gear.pricePerDay);
+    // Kita panggil addToCart berulang kali sesuai qty (cara simpel)
+    // Atau jika context support qty langsung, bisa dimodif.
+    // Tapi context kita sebelumnya add +1 per klik.
+    // Agar rapi, kita modifikasi sedikit context add-nya?
+    // Tidak usah, kita loop saja di sini biar logic context tetap simpel.
+
+    // Tapi tunggu, context kita punya logic: "Kalau ada, quantity +1".
+    // Jadi kalau user set Qty 3, kita panggil addToCart 3 kali? Agak aneh.
+    // LEBIH BAIK: Kita update Context sedikit agar support `addToCart(product, quantity)`.
+
+    // TAPI UNTUK SEKARANG (biar ga ubah file context lagi):
+    // Kita panggil fungsi update manual atau loop.
+    // Cara paling aman tanpa ubah context: Loop.
+    for (let i = 0; i < qty; i++) {
+      addToCart(gear);
+      // Note: Alert di context mungkin akan muncul berkali-kali jika tidak di-tweak.
+      // Tapi tidak apa untuk MVP.
     }
-  }, [startDate, endDate, gear]);
+    // ATAU: Cukup panggil sekali, user bisa tambah qty di keranjang nanti.
+    // "Barang berhasil ditambahkan! Cek keranjang untuk atur jumlah."
+  };
 
-  // 3. Handle Booking (Kirim ke Backend)
-  const handleBooking = async () => {
-    const token = Cookies.get('token');
+  // REVISI LOGIC:
+  // Context `addToCart` kita sebelumnya pakai `setItems` quantity + 1.
+  // Mari kita pakai cara cerdik: Panggil context sekali, tapi objeknya kita manipulasi sedikit
+  // atau biarkan user tambah 1, nanti di cart dia edit lagi.
+  // OPSI TERBAIK: Panggil sekali saja, anggap "Add 1". User atur sisanya di Cart.
 
-    if (!token) {
-      const confirmLogin = confirm('Anda belum login. Mau login sekarang?');
-      if (confirmLogin) router.push('/login');
-      return;
-    }
-
-    if (!startDate || !endDate) {
-      alert('⚠️ Harap pilih Tanggal Mulai dan Selesai dulu!');
-      return;
-    }
-
-    if (new Date(startDate) > new Date(endDate)) {
-      alert('⚠️ Tanggal selesai tidak boleh mendahului tanggal mulai!');
-      return;
-    }
-
-    try {
-      const confirmBooking = confirm(
-        `Sewa alat ini?\nTotal Estimasi: Rp ${totalPrice.toLocaleString(
-          'id-ID'
-        )}`
-      );
-      if (!confirmBooking) return;
-
-      // PAYLOAD SESUAI BACKEND ANDA
-      const payload = {
-        startDate: startDate,
-        endDate: endDate,
-        items: [
-          {
-            gearId: gear.id,
-            quantity: 1, // Default 1 unit
-          },
-        ],
-      };
-
-      const res = await fetch('http://localhost:8000/api/bookings', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(payload),
-      });
-
-      const json = await res.json();
-
-      if (!res.ok) {
-        throw new Error(json.message || 'Gagal melakukan booking');
-      }
-
-      alert('✅ Booking Berhasil! Silakan cek Dashboard.');
-      router.push('/user/dashboard');
-    } catch (error: any) {
-      console.error(error);
-      alert(`❌ Error: ${error.message}`);
-    }
+  const handleAddSimple = () => {
+    addToCart(gear); // Tambah 1 item
+    // Redirect opsional atau stay
   };
 
   if (isLoading)
@@ -126,15 +89,16 @@ export default function GearDetailPage() {
   return (
     <main className="min-h-screen bg-slate-50 py-10 px-4">
       <div className="container mx-auto max-w-5xl">
+        {/* Breadcrumb */}
         <Link
-          href="/"
-          className="inline-flex items-center gap-2 text-slate-500 hover:text-orange-600 mb-6 font-medium transition"
+          href="/catalog"
+          className="inline-flex items-center gap-2 text-slate-500 hover:text-orange-600 mb-6 font-bold transition"
         >
           <ArrowLeft weight="bold" /> Kembali ke Katalog
         </Link>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Kolom Kiri: Info Barang */}
+          {/* FOTO & DESKRIPSI (KIRI) */}
           <div className="lg:col-span-2 space-y-8">
             <div className="bg-white rounded-3xl p-4 shadow-sm border border-slate-200">
               <div className="relative h-[400px] w-full rounded-2xl overflow-hidden bg-slate-100">
@@ -147,9 +111,11 @@ export default function GearDetailPage() {
                   alt={gear.name}
                   fill
                   className="object-contain"
+                  unoptimized
                 />
               </div>
             </div>
+
             <div className="bg-white rounded-3xl p-8 shadow-sm border border-slate-200">
               <h1 className="text-3xl font-bold text-slate-900 mb-2">
                 {gear.name}
@@ -166,7 +132,7 @@ export default function GearDetailPage() {
             </div>
           </div>
 
-          {/* Kolom Kanan: Form Booking */}
+          {/* KARTU AKSI (KANAN) */}
           <div className="lg:col-span-1">
             <div className="bg-white rounded-3xl shadow-lg border border-orange-100 p-6 sticky top-8">
               <div className="flex justify-between items-end mb-6">
@@ -180,63 +146,35 @@ export default function GearDetailPage() {
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-slate-500 text-sm">Stok</p>
+                  <p className="text-slate-500 text-sm">Stok Tersedia</p>
                   <p className="font-bold text-slate-900">{gear.stock} Unit</p>
                 </div>
               </div>
 
-              <div className="space-y-4 mb-6">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
-                    Mulai Sewa
-                  </label>
-                  <div className="relative">
-                    <Calendar
-                      className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-                      size={20}
-                    />
-                    <input
-                      type="date"
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-10 pr-4 focus:ring-2 focus:ring-orange-500 outline-none"
-                      onChange={(e) => setStartDate(e.target.value)}
-                    />
+              {/* TOMBOL ADD TO CART */}
+              {gear.stock > 0 ? (
+                <div className="space-y-4">
+                  <div className="bg-green-50 text-green-700 px-4 py-3 rounded-xl text-sm font-bold flex items-center gap-2">
+                    <CheckCircle weight="fill" size={18} /> Stok Ready, Siap
+                    Disewa!
                   </div>
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
-                    Selesai Sewa
-                  </label>
-                  <div className="relative">
-                    <Calendar
-                      className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-                      size={20}
-                    />
-                    <input
-                      type="date"
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-10 pr-4 focus:ring-2 focus:ring-orange-500 outline-none"
-                      onChange={(e) => setEndDate(e.target.value)}
-                    />
-                  </div>
-                </div>
-              </div>
 
-              {totalPrice > 0 && (
-                <div className="bg-orange-50 p-4 rounded-xl flex justify-between items-center mb-6 border border-orange-100">
-                  <span className="text-orange-800 font-medium">
-                    Total Estimasi
-                  </span>
-                  <span className="text-orange-900 font-bold text-lg">
-                    Rp {totalPrice.toLocaleString('id-ID')}
-                  </span>
+                  <button
+                    onClick={handleAddSimple}
+                    className="w-full bg-slate-900 hover:bg-orange-600 text-white font-bold py-4 rounded-xl transition flex items-center justify-center gap-2 shadow-lg shadow-slate-200"
+                  >
+                    <ShoppingCart weight="fill" size={20} /> Tambah ke Keranjang
+                  </button>
+
+                  <p className="text-xs text-center text-slate-400">
+                    *Pilih tanggal sewa nanti saat Checkout
+                  </p>
+                </div>
+              ) : (
+                <div className="bg-red-50 text-red-600 text-center py-4 rounded-xl font-bold">
+                  Stok Habis 😔
                 </div>
               )}
-
-              <button
-                onClick={handleBooking}
-                className="w-full bg-slate-900 hover:bg-orange-600 text-white font-bold py-4 rounded-xl transition flex items-center justify-center gap-2"
-              >
-                <ShoppingBag weight="fill" size={20} /> Sewa Sekarang
-              </button>
             </div>
           </div>
         </div>
