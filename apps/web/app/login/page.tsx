@@ -24,7 +24,7 @@ export default function LoginPage() {
         if (user.role === 'ADMIN') {
           router.replace('/admin/dashboard');
         } else {
-          router.replace('/dashboard');
+          router.replace('/user/dashboard');
         }
       } catch (e) {
         // Cookie rusak? Biarkan user login ulang.
@@ -112,7 +112,7 @@ export default function LoginPage() {
         window.location.href = '/admin/dashboard';
       } else {
         console.log('🔀 Redirecting to USER Dashboard');
-        window.location.href = '/dashboard';
+        window.location.href = '/user/dashboard';
       }
     } catch (err: any) {
       console.error('❌ Login Gagal:', err);
