@@ -95,3 +95,72 @@ export const getGearById = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Internal Server Error' });
   }
 };
+export const updateGear = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { name, description, pricePerDay, stock, categoryId } = req.body;
+
+    // Cek apakah barang ada?
+    const existingGear = await prisma.gear.findUnique({
+      where: { id: id }, // <-- JANGAN pakai Number(id)
+    });
+
+    if (!existingGear) {
+      return res.status(404).json({ message: 'Gear not found' });
+    }
+
+    // Lakukan Update
+    const updatedGear = await prisma.gear.update({
+      where: { id: id }, // <-- JANGAN pakai Number(id)
+      data: {
+        name,
+        description,
+        pricePerDay: Number(pricePerDay), // Kalau harga tetap Number
+        stock: Number(stock), // Stok tetap Number
+        categoryId: Number(categoryId), // CategoryId tetap Number
+      },
+    });
+
+    res.status(200).json({
+      message: 'Gear updated successfully',
+      data: updatedGear,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+};
+
+// --- DELETE GEAR (Hapus Barang) ---
+export const deleteGear = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    // Cek barang
+    const existingGear = await prisma.gear.findUnique({
+      where: { id: id }, // <-- JANGAN pakai Number(id)
+    });
+
+    if (!existingGear) {
+      return res.status(404).json({ message: 'Gear not found' });
+    }
+
+    // Hapus
+    await prisma.gear.delete({
+      where: { id: id }, // <-- JANGAN pakai Number(id)
+    });
+
+    res.status(200).json({
+      message: 'Gear deleted successfully',
+    });
+  } catch (error) {
+    console.error(error);
+    // @ts-ignore
+    if (error.code === 'P2003') {
+      return res
+        .status(400)
+        .json({ message: 'Cannot delete gear because it is used in bookings' });
+    }
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+};

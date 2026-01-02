@@ -2,74 +2,51 @@
 
 import { useEffect, useState } from 'react';
 import Cookies from 'js-cookie';
-import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Plus } from '@phosphor-icons/react';
 import {
   CheckCircle,
   XCircle,
-  Clock,
-  User,
-  Calendar,
+  Package,
+  Plus,
+  Archive,
 } from '@phosphor-icons/react';
 
 export default function AdminDashboard() {
   const router = useRouter();
   const [bookings, setBookings] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [processingId, setProcessingId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // 1. Ambil Data Semua Booking
+  // 1. Fetch Data (Sama seperti sebelumnya)
   const fetchBookings = async () => {
     const token = Cookies.get('token');
-    const userCookie = Cookies.get('user');
+    if (!token) return router.push('/login');
 
-    // A. Cek Login
-    if (!token || !userCookie) {
-      return router.push('/login');
-    }
-
-    // B. Cek Role Admin
-    try {
-      const user = JSON.parse(userCookie);
-      if (user.role !== 'ADMIN') {
-        alert('⛔ Akses Ditolak! Halaman ini khusus Admin.');
-        return router.push('/dashboard');
-      }
-    } catch (e) {
-      return router.push('/login');
-    }
-
-    // C. FETCH DATA KE BACKEND (Bagian ini yang tadi hilang)
     try {
       const res = await fetch('http://localhost:8000/api/bookings', {
         headers: { Authorization: `Bearer ${token}` },
       });
-
-      const data = await res.json();
-      setBookings(data.data || []);
+      const json = await res.json();
+      if (res.ok) setBookings(json.data);
     } catch (error) {
-      console.error('Gagal ambil data admin:', error);
+      console.error(error);
     } finally {
-      // D. MATIKAN LOADING (Penting!)
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
   useEffect(() => {
     fetchBookings();
-  }, []);
+  }, [router]);
 
-  // 2. Fungsi Update Status (Terima/Tolak)
-  const handleUpdateStatus = async (
-    bookingId: string,
-    newStatus: 'APPROVED' | 'REJECTED'
-  ) => {
+  // 2. Handle Status Update (Sama seperti sebelumnya)
+  const handleUpdateStatus = async (bookingId: number, newStatus: string) => {
     const token = Cookies.get('token');
-    if (!confirm(`Yakin ingin mengubah status menjadi ${newStatus}?`)) return;
-
-    setProcessingId(bookingId);
+    const confirmMsg =
+      newStatus === 'PAID'
+        ? 'Tandai pesanan ini LUNAS?'
+        : 'Batalkan pesanan ini?';
+    if (!confirm(confirmMsg)) return;
 
     try {
       const res = await fetch(
@@ -83,179 +60,178 @@ export default function AdminDashboard() {
           body: JSON.stringify({ status: newStatus }),
         }
       );
-
-      if (!res.ok) throw new Error('Gagal update status');
-
-      await fetchBookings(); // Refresh data
-      alert(`Berhasil! Status booking kini: ${newStatus}`);
+      if (res.ok) {
+        alert('Status berhasil diperbarui!');
+        fetchBookings();
+      }
     } catch (error) {
-      alert('Gagal mengupdate status.');
       console.error(error);
-    } finally {
-      setProcessingId(null);
     }
   };
 
   const getStatusColor = (status: string) => {
-    switch (status?.toUpperCase()) {
-      case 'APPROVED':
-        return 'bg-green-100 text-green-700 border-green-200';
-      case 'REJECTED':
-        return 'bg-red-100 text-red-700 border-red-200';
+    switch (status) {
+      case 'PENDING':
+        return 'bg-yellow-100 text-yellow-700';
+      case 'PAID':
+        return 'bg-green-100 text-green-700';
+      case 'CANCELLED':
+        return 'bg-red-100 text-red-700';
       default:
-        return 'bg-yellow-100 text-yellow-700 border-yellow-200';
+        return 'bg-slate-100 text-slate-700';
     }
   };
 
-  if (loading)
-    return (
-      <div className="min-h-screen flex items-center justify-center font-bold text-slate-500">
-        Memuat Data Admin...
-      </div>
-    );
-
   return (
-    <main className="min-h-screen bg-slate-100 py-10 px-4">
+    <main className="min-h-screen bg-slate-50 py-10 px-4">
       <div className="container mx-auto max-w-6xl">
-        <div className="flex justify-between items-center mb-8">
+        {/* HEADER DASHBOARD */}
+        <div className="flex flex-col md:flex-row justify-between items-center mb-10 gap-4">
           <div>
             <h1 className="text-3xl font-bold text-slate-900">
               Admin Dashboard 👮‍♂️
             </h1>
-            <p className="text-slate-500">Kelola semua penyewaan masuk</p>
+            <p className="text-slate-500">
+              Pantau pesanan dan kelola inventaris
+            </p>
           </div>
 
           <div className="flex gap-3">
-            {/* TOMBOL BARU: TAMBAH BARANG */}
+            {/* --- TOMBOL BARU: KELOLA BARANG --- */}
             <Link
-              href="/admin/gears/create"
-              className="bg-slate-900 text-white px-4 py-2 rounded-lg font-bold hover:bg-orange-600 transition flex items-center gap-2"
+              href="/admin/gears"
+              className="bg-white text-slate-700 border border-slate-300 px-5 py-3 rounded-xl font-bold hover:bg-slate-50 hover:text-slate-900 transition flex items-center gap-2 shadow-sm"
             >
-              <Plus weight="bold" /> Tambah Barang
+              <Archive weight="bold" size={18} /> Kelola Barang
             </Link>
 
-            <div className="bg-white px-4 py-2 rounded-lg shadow-sm font-bold text-slate-700 border border-slate-200">
-              Total Order: {bookings.length}
+            {/* Tombol Tambah Barang */}
+            <Link
+              href="/admin/gears/create"
+              className="bg-slate-900 text-white px-5 py-3 rounded-xl font-bold hover:bg-orange-600 transition flex items-center gap-2 shadow-lg shadow-slate-200"
+            >
+              <Plus weight="bold" size={18} /> Tambah Baru
+            </Link>
+
+            {/* Logout */}
+            <button
+              onClick={() => {
+                Cookies.remove('token');
+                router.push('/login');
+              }}
+              className="px-5 py-3 text-red-600 font-bold hover:bg-red-50 rounded-xl transition"
+            >
+              Logout
+            </button>
+          </div>
+        </div>
+
+        {/* --- STATISTIK & TABEL (Sama seperti kode sebelumnya) --- */}
+        {/* Copy bagian statistik dan tabel di bawah ini dari file sebelumnya, 
+            karena tidak ada perubahan logika di bagian bawah sini. */}
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+          {/* Statistik Cards... */}
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
+            <div className="w-12 h-12 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center font-bold text-xl">
+              {bookings.filter((b) => b.status === 'PENDING').length}
+            </div>
+            <div>
+              <p className="text-slate-500 text-sm">Perlu Diproses</p>
+              <h3 className="text-lg font-bold">Pesanan Baru</h3>
+            </div>
+          </div>
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
+            <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center">
+              <Package size={24} weight="fill" />
+            </div>
+            <div>
+              <p className="text-slate-500 text-sm">Total Transaksi</p>
+              <h3 className="text-lg font-bold">{bookings.length} Order</h3>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        {/* Tabel Pesanan */}
+        <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+          <div className="p-6 border-b border-slate-100">
+            <h2 className="text-xl font-bold text-slate-800">
+              Daftar Pesanan Masuk
+            </h2>
+          </div>
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-slate-50 text-slate-500 font-bold border-b border-slate-200">
+            <table className="w-full text-left border-collapse">
+              <thead className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
                 <tr>
-                  <th className="p-4">Pelanggan</th>
-                  <th className="p-4">Barang Sewaan</th>
-                  <th className="p-4">Jadwal</th>
-                  <th className="p-4">Total</th>
-                  <th className="p-4">Status</th>
-                  <th className="p-4 text-center">Aksi</th>
+                  <th className="p-4 font-bold">ID</th>
+                  <th className="p-4 font-bold">Penyewa</th>
+                  <th className="p-4 font-bold">Tanggal</th>
+                  <th className="p-4 font-bold">Total</th>
+                  <th className="p-4 font-bold">Status</th>
+                  <th className="p-4 font-bold text-center">Aksi</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
-                {bookings.map((booking) => {
-                  const firstItem = booking.items?.[0];
-
-                  return (
-                    <tr key={booking.id} className="hover:bg-slate-50">
-                      {/* PELANGGAN */}
-                      <td className="p-4">
-                        <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center">
-                            <User weight="bold" />
-                          </div>
-                          <div>
-                            <div className="font-bold text-slate-900">
-                              {booking.user?.name || 'User'}
-                            </div>
-                            <div className="text-xs text-slate-500">
-                              {booking.user?.email}
-                            </div>
-                          </div>
-                        </div>
+              <tbody className="divide-y divide-slate-100 text-sm text-slate-700">
+                {isLoading ? (
+                  <tr>
+                    <td colSpan={6} className="p-8 text-center">
+                      Memuat...
+                    </td>
+                  </tr>
+                ) : (
+                  bookings.map((booking) => (
+                    <tr
+                      key={booking.id}
+                      className="hover:bg-slate-50 transition"
+                    >
+                      <td className="p-4 font-mono font-bold text-slate-400">
+                        #{booking.id}
                       </td>
-
-                      {/* BARANG */}
-                      <td className="p-4">
-                        <div className="font-medium text-slate-800">
-                          {firstItem?.gear?.name || 'Unknown'}
-                        </div>
-                        {booking.items.length > 1 && (
-                          <span className="text-xs text-slate-400">
-                            +{booking.items.length - 1} lainnya
-                          </span>
-                        )}
+                      <td className="p-4 font-bold">{booking.user?.name}</td>
+                      <td className="p-4 text-xs text-slate-500">
+                        {new Date(booking.startDate).toLocaleDateString(
+                          'id-ID'
+                        )}{' '}
+                        -{' '}
+                        {new Date(booking.endDate).toLocaleDateString('id-ID')}
                       </td>
-
-                      {/* JADWAL */}
-                      <td className="p-4 text-slate-600">
-                        <div className="flex flex-col gap-1 text-xs">
-                          <span className="flex items-center gap-1">
-                            Start:{' '}
-                            {new Date(booking.startDate).toLocaleDateString(
-                              'id-ID'
-                            )}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            End:{' '}
-                            {new Date(booking.endDate).toLocaleDateString(
-                              'id-ID'
-                            )}
-                          </span>
-                        </div>
-                      </td>
-
-                      {/* TOTAL */}
                       <td className="p-4 font-bold text-slate-900">
                         Rp {booking.totalPrice.toLocaleString('id-ID')}
                       </td>
-
-                      {/* STATUS */}
                       <td className="p-4">
                         <span
-                          className={`px-2 py-1 rounded text-xs font-bold border ${getStatusColor(
+                          className={`px-2 py-1 rounded-full text-xs font-bold ${getStatusColor(
                             booking.status
                           )}`}
                         >
                           {booking.status}
                         </span>
                       </td>
-
-                      {/* AKSI (Hanya muncul jika PENDING) */}
-                      <td className="p-4">
-                        {booking.status === 'PENDING' ? (
+                      <td className="p-4 text-center">
+                        {booking.status === 'PENDING' && (
                           <div className="flex justify-center gap-2">
                             <button
                               onClick={() =>
-                                handleUpdateStatus(booking.id, 'APPROVED')
+                                handleUpdateStatus(booking.id, 'PAID')
                               }
-                              disabled={!!processingId}
-                              className="bg-green-100 text-green-700 p-2 rounded hover:bg-green-200 transition disabled:opacity-50"
-                              title="Terima (Approve)"
+                              className="p-2 bg-green-100 text-green-600 rounded hover:bg-green-600 hover:text-white transition"
                             >
-                              <CheckCircle size={20} weight="fill" />
+                              <CheckCircle weight="fill" />
                             </button>
                             <button
                               onClick={() =>
-                                handleUpdateStatus(booking.id, 'REJECTED')
+                                handleUpdateStatus(booking.id, 'CANCELLED')
                               }
-                              disabled={!!processingId}
-                              className="bg-red-100 text-red-700 p-2 rounded hover:bg-red-200 transition disabled:opacity-50"
-                              title="Tolak (Reject)"
+                              className="p-2 bg-red-100 text-red-600 rounded hover:bg-red-600 hover:text-white transition"
                             >
-                              <XCircle size={20} weight="fill" />
+                              <XCircle weight="fill" />
                             </button>
-                          </div>
-                        ) : (
-                          <div className="text-center text-xs text-slate-400 italic">
-                            Selesai
                           </div>
                         )}
                       </td>
                     </tr>
-                  );
-                })}
+                  ))
+                )}
               </tbody>
             </table>
           </div>
