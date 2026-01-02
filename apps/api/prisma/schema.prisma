@@ -9,7 +9,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// 1. Model User (Penyewa & Admin)
 model User {
   id        String   @id @default(uuid())
   email     String   @unique
@@ -18,11 +17,11 @@ model User {
   role      Role     @default(CUSTOMER)
   createdAt DateTime @default(now())
   
-  // Relasi: User bisa punya banyak booking
+  
   bookings  Booking[]
 }
 
-// 2. Model Gear (Barang yang disewakan)
+
 model Gear {
   id          String   @id @default(uuid())
   name        String   
@@ -32,7 +31,7 @@ model Gear {
   description String?
   imageUrl    String?
   
-  // Relasi
+  
   bookingItems BookingItem[]
   categoryId  Int
   category    Category @relation(fields: [categoryId], references: [id])
@@ -40,7 +39,7 @@ model Gear {
   updatedAt   DateTime @updatedAt
 }
 
-// 3. Model Booking (Transaksi Sewa)
+
 model Booking {
   id          String        @id @default(uuid())
   startDate   DateTime
@@ -49,17 +48,17 @@ model Booking {
   status      BookingStatus @default(PENDING)
   createdAt   DateTime      @default(now())
 
-  // Relasi
+  
   userId      String
   user        User          @relation(fields: [userId], references: [id])
   items       BookingItem[]
 }
 
-// Tabel Perantara (Agar 1 Booking bisa sewa banyak alat beda jenis)
+
 model BookingItem {
   id        String @id @default(uuid())
   quantity  Int
-  price     Int    // Harga saat transaksi terjadi (snapshot)
+  price     Int    
   
   bookingId String
   booking   Booking @relation(fields: [bookingId], references: [id])
@@ -67,7 +66,7 @@ model BookingItem {
   gear      Gear    @relation(fields: [gearId], references: [id])
 }
 
-// Enum (Pilihan Tetap)
+
 enum Role {
   CUSTOMER
   ADMIN
@@ -76,11 +75,13 @@ enum Role {
 
 
 enum BookingStatus {
-  PENDING   // Belum bayar
-  PAID      // Sudah bayar, menunggu ambil
-  PICKED_UP // Barang dibawa
-  RETURNED  // Barang sudah kembali
-  CANCELLED
+  PENDING     
+  APPROVED    
+  REJECTED    
+  PAID        
+  PICKED_UP   
+  RETURNED    
+  CANCELLED   
 }
 
 model Category {

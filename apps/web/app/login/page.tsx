@@ -1,14 +1,36 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Cookies from 'js-cookie';
+import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
+  // 1. Auto-Redirect jika sudah login (Cegah user login 2x)
+  useEffect(() => {
+    const token = Cookies.get('token');
+    const userCookie = Cookies.get('user');
+
+    if (token && userCookie) {
+      try {
+        const user = JSON.parse(userCookie);
+        // Redirect sesuai role yang tersimpan
+        if (user.role === 'ADMIN') {
+          router.replace('/admin/dashboard');
+        } else {
+          router.replace('/dashboard');
+        }
+      } catch (e) {
+        // Cookie rusak? Biarkan user login ulang.
+      }
+    }
+  }, [router]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -16,7 +38,8 @@ export default function LoginPage() {
     setError('');
 
     try {
-      // 1. Kirim Data ke Backend
+      console.log('🚀 Mengirim request login...');
+
       const res = await fetch('http://localhost:8000/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -24,63 +47,75 @@ export default function LoginPage() {
       });
 
       const responseJson = await res.json();
-
-      // Debug: Intip isi respons di Console Browser
-      console.log('🔍 RESPONS BACKEND:', responseJson);
+      console.log('🔍 RAW RESPONSE:', responseJson);
 
       if (!res.ok) {
-        throw new Error(responseJson.message || 'Gagal login.');
+        throw new Error(
+          responseJson.message || 'Gagal login. Periksa email/password.'
+        );
       }
 
-      // 2. AMBIL TOKEN (Cari di semua kemungkinan tempat)
-      // Backend Anda kemungkinan besar mengirim di responseJson.data.token
+      // =========================================================
+      // 🛠️ LOGIKA EKSTRAKSI DATA (SMART PARSER)
+      // =========================================================
+
+      // Ambil root data (bisa di properti 'data' atau root response itu sendiri)
+      const dataRoot = responseJson.data || responseJson;
+
+      // 1. CARI TOKEN
       let token =
+        dataRoot.accessToken ||
+        dataRoot.token ||
         responseJson.accessToken ||
-        responseJson.token ||
-        (responseJson.data && responseJson.data.accessToken) ||
-        (responseJson.data && responseJson.data.token);
+        responseJson.token;
 
-      // 3. AMBIL DATA USER
+      // 2. CARI DATA USER
+      // Cek 1: Apakah ada properti 'user'? (Nested)
+      // Cek 2: Apakah 'dataRoot' punya 'role'? (Flattened)
+      // Cek 3: Apakah root response punya 'role'?
       let userData =
-        responseJson.user || (responseJson.data && responseJson.data.user);
+        dataRoot.user ||
+        (dataRoot.role ? dataRoot : null) ||
+        (responseJson.role ? responseJson : null);
 
-      // Cek apakah token ketemu
-      if (!token || token === 'undefined') {
-        // Jika masih gagal, kita log struktur datanya biar tahu salahnya dimana
-        console.error('Struktur JSON Backend:', responseJson);
-        throw new Error('Token tidak ditemukan di dalam respons backend.');
-      }
+      // Validasi Akhir
+      if (!token) throw new Error('Token tidak ditemukan di respons Backend!');
+      if (!userData)
+        throw new Error('Data User (Role) tidak ditemukan di respons Backend!');
 
-      // Bersihkan token jika ada tanda kutip string yang ikut
-      if (typeof token === 'string') {
-        token = token.replace(/"/g, '');
-      }
+      // Bersihkan data user dari token (agar cookie user tidak terlalu besar)
+      // Kita buat object baru yang bersih
+      const cleanUser = {
+        id: userData.id,
+        name: userData.name,
+        email: userData.email,
+        role: userData.role,
+      };
 
-      console.log('✅ Token Valid ditemukan:', token.substring(0, 10) + '...');
+      // Bersihkan token dari tanda kutip string jika ada
+      if (typeof token === 'string') token = token.replace(/"/g, '');
 
-      // 4. SIMPAN KE COOKIE (Path '/' Wajib)
+      console.log('✅ Data Tervalidasi:');
+      console.log('Token:', token.substring(0, 10) + '...');
+      console.log('Role:', cleanUser.role);
+
+      // =========================================================
+      // 💾 SIMPAN COOKIE & REDIRECT
+      // =========================================================
+
       Cookies.set('token', token, { expires: 1, path: '/' });
+      Cookies.set('user', JSON.stringify(cleanUser), { expires: 1, path: '/' });
 
-      // Simpan User (Buat data dummy jika backend lupa kirim user object)
-      if (userData) {
-        Cookies.set('user', JSON.stringify(userData), {
-          expires: 1,
-          path: '/',
-        });
+      // FORCE REDIRECT (Polisi Lalu Lintas) 👮‍♂️
+      if (cleanUser.role === 'ADMIN') {
+        console.log('🔀 Redirecting to ADMIN Dashboard');
+        window.location.href = '/admin/dashboard';
       } else {
-        Cookies.set('user', JSON.stringify({ name: 'User', email }), {
-          expires: 1,
-          path: '/',
-        });
+        console.log('🔀 Redirecting to USER Dashboard');
+        window.location.href = '/dashboard';
       }
-
-      console.log('✅ Cookie tersimpan. Mengalihkan ke Dashboard...');
-
-      // 5. HARD RELOAD ke Dashboard
-      // Menggunakan window.location agar Middleware membaca cookie baru
-      window.location.href = '/dashboard';
     } catch (err: any) {
-      console.error('Login Error:', err);
+      console.error('❌ Login Gagal:', err);
       setError(err.message);
       setIsLoading(false);
     }
@@ -90,16 +125,17 @@ export default function LoginPage() {
     <main className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
       <div className="bg-white p-8 rounded-2xl shadow-lg w-full max-w-md border border-slate-100">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-slate-900">
-            Selamat Datang Kembali
-          </h1>
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-lg bg-orange-100 text-orange-600 mb-4 font-bold text-xl">
+            S
+          </div>
+          <h1 className="text-2xl font-bold text-slate-900">Masuk Akun</h1>
           <p className="text-slate-500 mt-2">
-            Masuk untuk mengelola penyewaan alat
+            Kelola penyewaan alat camping kamu
           </p>
         </div>
 
         {error && (
-          <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm mb-6 text-center font-medium border border-red-100">
+          <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm mb-6 text-center font-medium border border-red-100 animate-pulse">
             {error}
           </div>
         )}
@@ -136,7 +172,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full bg-slate-900 text-white font-bold py-3 rounded-lg hover:bg-orange-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-slate-900 text-white font-bold py-3 rounded-lg hover:bg-orange-600 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-slate-200"
           >
             {isLoading ? 'Memproses...' : 'Masuk Sekarang'}
           </button>
@@ -148,7 +184,7 @@ export default function LoginPage() {
             href="/register"
             className="text-orange-600 font-bold hover:underline"
           >
-            Daftar di sini
+            Daftar User Baru
           </Link>
         </p>
       </div>

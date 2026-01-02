@@ -3,7 +3,13 @@ import type { NextRequest } from 'next/server';
 
 // DAFTAR HALAMAN RAHASIA (Private Routes)
 // Tambahkan path lain di sini jika ingin dikunci
-const protectedRoutes = ['/dashboard', '/profile', '/orders', '/checkout'];
+const protectedRoutes = [
+  '/dashboard',
+  '/profile',
+  '/orders',
+  '/checkout',
+  '/admin',
+];
 
 // DAFTAR HALAMAN KHUSUS TAMU (Auth Routes)
 // Kalau sudah login, tidak boleh masuk sini lagi (harus logout dulu)
