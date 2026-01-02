@@ -35,7 +35,28 @@ export const createGear = async (req: Request, res: Response) => {
 
 export const getAllGears = async (req: Request, res: Response) => {
   try {
+    // 1. Tangkap Query dari URL (contoh: ?search=tenda&cat=1)
+    const { search, cat } = req.query;
+
+    // 2. Siapkan Filter (Where Clause)
+    let whereClause: any = {};
+
+    // Jika ada pencarian nama
+    if (search) {
+      whereClause.name = {
+        contains: String(search), // Cari yang namanya mengandung kata ini
+        // mode: 'insensitive', // Opsional: Agar tidak peduli huruf besar/kecil (Cek DB Anda support ini atau tidak)
+      };
+    }
+
+    // Jika ada filter kategori
+    if (cat) {
+      whereClause.categoryId = Number(cat);
+    }
+
+    // 3. Ambil Data dengan Filter
     const gears = await prisma.gear.findMany({
+      where: whereClause,
       include: {
         category: true,
       },
@@ -45,10 +66,11 @@ export const getAllGears = async (req: Request, res: Response) => {
     });
 
     res.status(200).json({
-      message: 'Get all gears success',
+      message: 'Get gears success',
       data: gears,
     });
   } catch (error) {
+    console.error(error); // Penting untuk debugging
     res.status(500).json({ message: 'Internal Server Error' });
   }
 };
