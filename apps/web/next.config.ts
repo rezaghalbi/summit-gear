@@ -9,6 +9,14 @@ const nextConfig: NextConfig = {
         port: '8000',
         pathname: '/images/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'placehold.co',
+      },
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
+      },
     ],
   },
 };
