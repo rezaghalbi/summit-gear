@@ -4,7 +4,7 @@ import {
   getMyBookings,
   getAllBookings,
   updateBookingStatus,
-  getBookingById, // <--- Pastikan Controller ini di-import!
+  getBookingById,
 } from '../controllers/booking.controller';
 import { verifyToken } from '../middlewares/auth.middleware';
 
@@ -15,10 +15,8 @@ router.post('/', verifyToken, createBooking);
 router.get('/my-bookings', verifyToken, getMyBookings);
 
 // --- Admin Routes ---
-router.get('/', verifyToken, getAllBookings); // List Semua
-router.patch('/:id/status', verifyToken, updateBookingStatus); // Update Status
-
-// --- ROUTE DETAIL (YANG HILANG TADI) ---
-router.get('/:id', verifyToken, getBookingById); // <--- TAMBAHKAN INI ✅
+router.get('/', verifyToken, getAllBookings);
+router.patch('/:id/status', verifyToken, updateBookingStatus);
+router.get('/:id', verifyToken, getBookingById);
 
 export default router;

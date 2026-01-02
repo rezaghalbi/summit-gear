@@ -31,16 +31,14 @@ export default function BookingDetailPage() {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-
-      // Cek error sebelum parse JSON
-      if (!res.ok) {
-        alert('Booking tidak ditemukan atau terjadi kesalahan.');
-        router.push('/admin/dashboard');
-        return;
-      }
-
       const json = await res.json();
-      setBooking(json.data);
+
+      if (res.ok) {
+        setBooking(json.data);
+      } else {
+        alert('Booking tidak ditemukan!');
+        router.push('/admin/dashboard');
+      }
     } catch (error) {
       console.error(error);
     } finally {
@@ -52,7 +50,7 @@ export default function BookingDetailPage() {
     if (params.id) fetchBookingDetail();
   }, [params.id]);
 
-  // 2. Fungsi Update Status
+  // 2. Fungsi Update Status (Sama seperti dashboard)
   const handleUpdateStatus = async (newStatus: string) => {
     const token = Cookies.get('token');
     const confirmMsg =
@@ -83,31 +81,25 @@ export default function BookingDetailPage() {
     }
   };
 
-  if (isLoading)
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        Memuat Struk...
-      </div>
-    );
+  if (isLoading) return <div className="p-10 text-center">Memuat Struk...</div>;
   if (!booking) return null;
 
   // Hitung durasi hari
   const startDate = new Date(booking.startDate);
   const endDate = new Date(booking.endDate);
   const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) || 1;
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
   return (
     <main className="min-h-screen bg-slate-50 py-10 px-4">
       <div className="container mx-auto max-w-4xl">
-        {/* --- TOMBOL KEMBALI (BACK BUTTON) --- */}
+        {/* Header Navigasi */}
         <Link
           href="/admin/dashboard"
-          className="inline-flex items-center gap-2 text-slate-500 hover:text-slate-900 mb-6 font-bold transition bg-white px-4 py-2 rounded-lg border border-slate-200 shadow-sm hover:shadow-md"
+          className="inline-flex items-center gap-2 text-slate-500 hover:text-slate-900 mb-6 font-bold transition"
         >
           <ArrowLeft weight="bold" /> Kembali ke Dashboard
         </Link>
-        {/* ------------------------------------ */}
 
         {/* KARTU UTAMA (STRUK) */}
         <div className="bg-white rounded-3xl shadow-lg border border-slate-200 overflow-hidden">
@@ -214,11 +206,7 @@ export default function BookingDetailPage() {
                         <div className="w-10 h-10 bg-slate-100 rounded overflow-hidden relative">
                           {item.gear?.imageUrl && (
                             <Image
-                              src={
-                                item.gear.imageUrl.startsWith('http')
-                                  ? item.gear.imageUrl
-                                  : `http://localhost:8000${item.gear.imageUrl}`
-                              }
+                              src={`http://localhost:8000${item.gear.imageUrl}`}
                               fill
                               className="object-cover"
                               alt="gear"

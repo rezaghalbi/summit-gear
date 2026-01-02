@@ -9,8 +9,7 @@ import {
   XCircle,
   Package,
   Plus,
-  Archive,
-  Users, // <--- Icon baru untuk tombol Users
+  Archive, // Menggunakan ArchiveBox agar konsisten
 } from '@phosphor-icons/react';
 
 export default function AdminDashboard() {
@@ -98,16 +97,7 @@ export default function AdminDashboard() {
           </div>
 
           <div className="flex gap-3">
-            {/* --- TOMBOL BARU: DAFTAR USERS --- */}
-            <Link
-              href="/admin/users"
-              className="bg-white text-slate-700 border border-slate-300 px-5 py-3 rounded-xl font-bold hover:bg-slate-50 hover:text-slate-900 transition flex items-center gap-2 shadow-sm"
-            >
-              <Users weight="bold" size={18} /> Users
-            </Link>
-            {/* ------------------------------- */}
-
-            {/* Tombol Kelola Barang */}
+            {/* TOMBOL KELOLA BARANG */}
             <Link
               href="/admin/gears"
               className="bg-white text-slate-700 border border-slate-300 px-5 py-3 rounded-xl font-bold hover:bg-slate-50 hover:text-slate-900 transition flex items-center gap-2 shadow-sm"
@@ -115,7 +105,7 @@ export default function AdminDashboard() {
               <Archive weight="bold" size={18} /> Kelola Barang
             </Link>
 
-            {/* Tombol Tambah Barang */}
+            {/* TOMBOL TAMBAH BARANG */}
             <Link
               href="/admin/gears/create"
               className="bg-slate-900 text-white px-5 py-3 rounded-xl font-bold hover:bg-orange-600 transition flex items-center gap-2 shadow-lg shadow-slate-200"
@@ -123,7 +113,7 @@ export default function AdminDashboard() {
               <Plus weight="bold" size={18} /> Tambah Baru
             </Link>
 
-            {/* Logout */}
+            {/* LOGOUT */}
             <button
               onClick={() => {
                 Cookies.remove('token');
@@ -136,7 +126,7 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* --- STATISTIK --- */}
+        {/* STATISTIK */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
             <div className="w-12 h-12 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center font-bold text-xl">
@@ -145,6 +135,15 @@ export default function AdminDashboard() {
             <div>
               <p className="text-slate-500 text-sm">Perlu Diproses</p>
               <h3 className="text-lg font-bold">Pesanan Baru</h3>
+            </div>
+          </div>
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
+            <div className="w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center font-bold text-xl">
+              {bookings.filter((b) => b.status === 'PAID').length}
+            </div>
+            <div>
+              <p className="text-slate-500 text-sm">Sudah Lunas</p>
+              <h3 className="text-lg font-bold">Pesanan Aktif</h3>
             </div>
           </div>
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
@@ -158,7 +157,7 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* --- TABEL PESANAN --- */}
+        {/* TABEL PESANAN */}
         <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
           <div className="p-6 border-b border-slate-100">
             <h2 className="text-xl font-bold text-slate-800">
@@ -184,6 +183,12 @@ export default function AdminDashboard() {
                       Memuat...
                     </td>
                   </tr>
+                ) : bookings.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="p-8 text-center text-slate-400">
+                      Belum ada pesanan masuk.
+                    </td>
+                  </tr>
                 ) : (
                   bookings.map((booking) => (
                     <tr
@@ -193,7 +198,12 @@ export default function AdminDashboard() {
                       <td className="p-4 font-mono font-bold text-slate-400">
                         #{booking.id}
                       </td>
-                      <td className="p-4 font-bold">{booking.user?.name}</td>
+                      <td className="p-4">
+                        <div className="font-bold">{booking.user?.name}</div>
+                        <div className="text-xs text-slate-400">
+                          {booking.user?.email}
+                        </div>
+                      </td>
                       <td className="p-4 text-xs text-slate-500">
                         {new Date(booking.startDate).toLocaleDateString(
                           'id-ID'
@@ -213,9 +223,11 @@ export default function AdminDashboard() {
                           {booking.status}
                         </span>
                       </td>
+
+                      {/* --- UPDATE BAGIAN INI --- */}
                       <td className="p-4 text-center">
                         <div className="flex justify-center gap-2">
-                          {/* Tombol Detail */}
+                          {/* 1. Tombol Detail (Selalu Muncul) */}
                           <Link
                             href={`/admin/bookings/${booking.id}`}
                             className="p-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-900 hover:text-white transition"
@@ -224,6 +236,7 @@ export default function AdminDashboard() {
                             <span className="font-bold text-xs">Detail</span>
                           </Link>
 
+                          {/* 2. Tombol Aksi (Hanya jika PENDING) */}
                           {booking.status === 'PENDING' && (
                             <>
                               <button
@@ -231,6 +244,7 @@ export default function AdminDashboard() {
                                   handleUpdateStatus(booking.id, 'PAID')
                                 }
                                 className="p-2 bg-green-100 text-green-600 rounded hover:bg-green-600 hover:text-white transition"
+                                title="Terima (Lunas)"
                               >
                                 <CheckCircle weight="fill" />
                               </button>
@@ -239,6 +253,7 @@ export default function AdminDashboard() {
                                   handleUpdateStatus(booking.id, 'CANCELLED')
                                 }
                                 className="p-2 bg-red-100 text-red-600 rounded hover:bg-red-600 hover:text-white transition"
+                                title="Tolak (Cancel)"
                               >
                                 <XCircle weight="fill" />
                               </button>
@@ -246,6 +261,7 @@ export default function AdminDashboard() {
                           )}
                         </div>
                       </td>
+                      {/* ------------------------- */}
                     </tr>
                   ))
                 )}

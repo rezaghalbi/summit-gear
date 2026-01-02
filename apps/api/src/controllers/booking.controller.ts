@@ -143,11 +143,17 @@ export const getBookingById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
+    // Cari booking berdasarkan ID
     const booking = await prisma.booking.findUnique({
-      where: { id: id }, // Ingat: JANGAN pakai Number(id) karena ID Anda UUID
+      where: { id }, // Pastikan ID di-convert ke Number
       include: {
-        user: true,
-        items: { include: { gear: true } },
+        user: true, // Sertakan data penyewa (Nama, Email)
+        items: {
+          // Sertakan barang yang disewa
+          include: {
+            gear: true, // Sertakan detail nama/gambar barangnya
+          },
+        },
       },
     });
 
@@ -155,9 +161,12 @@ export const getBookingById = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Booking not found' });
     }
 
-    res.status(200).json({ data: booking });
+    res.status(200).json({
+      message: 'Get booking detail success',
+      data: booking,
+    });
   } catch (error) {
-    console.error(error);
+    console.error('Error getBookingById:', error);
     res.status(500).json({ message: 'Internal Server Error' });
   }
 };
