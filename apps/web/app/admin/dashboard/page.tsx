@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import Cookies from 'js-cookie';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { Plus } from '@phosphor-icons/react';
 import {
   CheckCircle,
   XCircle,
@@ -122,8 +124,19 @@ export default function AdminDashboard() {
             </h1>
             <p className="text-slate-500">Kelola semua penyewaan masuk</p>
           </div>
-          <div className="bg-white px-4 py-2 rounded-lg shadow-sm font-bold text-slate-700">
-            Total Order: {bookings.length}
+
+          <div className="flex gap-3">
+            {/* TOMBOL BARU: TAMBAH BARANG */}
+            <Link
+              href="/admin/gears/create"
+              className="bg-slate-900 text-white px-4 py-2 rounded-lg font-bold hover:bg-orange-600 transition flex items-center gap-2"
+            >
+              <Plus weight="bold" /> Tambah Barang
+            </Link>
+
+            <div className="bg-white px-4 py-2 rounded-lg shadow-sm font-bold text-slate-700 border border-slate-200">
+              Total Order: {bookings.length}
+            </div>
           </div>
         </div>
 
