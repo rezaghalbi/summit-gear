@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Cookies from 'js-cookie';
 import Link from 'next/link';
@@ -12,17 +12,39 @@ export default function CreateGearPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
 
-  // State Form
+  // 1. STATE UNTUK DATA KATEGORI
+  const [categories, setCategories] = useState<any[]>([]);
+
   const [formData, setFormData] = useState({
     name: '',
     description: '',
     pricePerDay: '',
     stock: '',
-    categoryId: '1', // Default category ID 1 (Pastikan ID 1 ada di DB)
+    categoryId: '', // Default kosong
   });
   const [file, setFile] = useState<File | null>(null);
 
-  // Handle Perubahan Input Teks
+  // 2. AMBIL DATA KATEGORI DARI BACKEND
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const res = await fetch('http://localhost:8000/api/categories');
+        const json = await res.json();
+
+        if (res.ok && json.data) {
+          setCategories(json.data);
+          // Opsi: Set default ke kategori pertama
+          if (json.data.length > 0) {
+            setFormData((prev) => ({ ...prev, categoryId: json.data[0].id }));
+          }
+        }
+      } catch (err) {
+        console.error('Gagal load kategori:', err);
+      }
+    };
+    fetchCategories();
+  }, []);
+
   const handleChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
@@ -31,28 +53,25 @@ export default function CreateGearPage() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // Handle Gambar (Preview)
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (selectedFile) {
       setFile(selectedFile);
-      setPreview(URL.createObjectURL(selectedFile)); // Bikin preview url sementara
+      setPreview(URL.createObjectURL(selectedFile));
     }
   };
 
-  // Handle Submit ke Backend
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     const token = Cookies.get('token');
     if (!token) {
-      alert('Sesi habis, silakan login ulang.');
+      alert('Sesi habis. Login ulang yuk!');
       return router.push('/login');
     }
 
     try {
-      // 1. Bungkus data dalam FormData (Wajib untuk upload file)
       const data = new FormData();
       data.append('name', formData.name);
       data.append('description', formData.description);
@@ -61,32 +80,23 @@ export default function CreateGearPage() {
       data.append('categoryId', formData.categoryId);
 
       if (file) {
-        // 'image' harus sesuai dengan backend: uploader.single('image')
         data.append('image', file);
       } else {
-        throw new Error('Wajib upload gambar barang!');
+        throw new Error('Gambar wajib diupload!');
       }
 
-      // 2. Kirim ke Backend
       const res = await fetch('http://localhost:8000/api/gears', {
         method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          // Browser otomatis set Content-Type: multipart/form-data
-        },
+        headers: { Authorization: `Bearer ${token}` },
         body: data,
       });
 
       const json = await res.json();
+      if (!res.ok) throw new Error(json.message || 'Gagal upload');
 
-      if (!res.ok) {
-        throw new Error(json.message || 'Gagal upload barang');
-      }
-
-      alert('✅ Barang berhasil ditambahkan!');
-      router.push('/admin/dashboard'); // Balik ke dashboard
+      alert('✅ Barang berhasil disimpan!');
+      router.push('/admin/dashboard');
     } catch (error: any) {
-      console.error(error);
       alert(error.message);
     } finally {
       setIsLoading(false);
@@ -96,7 +106,6 @@ export default function CreateGearPage() {
   return (
     <main className="min-h-screen bg-slate-50 py-10 px-4">
       <div className="container mx-auto max-w-2xl">
-        {/* Header */}
         <div className="flex items-center gap-4 mb-8">
           <Link
             href="/admin/dashboard"
@@ -114,10 +123,9 @@ export default function CreateGearPage() {
           </div>
         </div>
 
-        {/* Form Card */}
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* 1. Upload Gambar */}
+            {/* Foto Upload */}
             <div>
               <label className="block text-sm font-bold text-slate-700 mb-2">
                 Foto Barang
@@ -148,13 +156,12 @@ export default function CreateGearPage() {
                     <p className="text-sm font-medium">
                       Klik untuk upload gambar
                     </p>
-                    <p className="text-xs">JPG, PNG max 2MB</p>
                   </div>
                 )}
               </div>
             </div>
 
-            {/* 2. Nama & Kategori */}
+            {/* Nama & Kategori */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-2">
@@ -164,30 +171,53 @@ export default function CreateGearPage() {
                   type="text"
                   name="name"
                   required
-                  placeholder="Contoh: Tenda Dome 4P"
+                  placeholder="Contoh: Tenda Dome"
                   className="w-full border border-slate-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-orange-500 outline-none"
                   onChange={handleChange}
                 />
               </div>
+
+              {/* 3. DROPDOWN KATEGORI */}
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-2">
-                  Kategori ID
+                  Kategori
                 </label>
-                <input
-                  type="number"
-                  name="categoryId"
-                  required
-                  defaultValue={1}
-                  className="w-full border border-slate-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-orange-500 outline-none"
-                  onChange={handleChange}
-                />
-                <p className="text-[10px] text-slate-400 mt-1">
-                  *Pastikan ID Kategori ada di database
-                </p>
+                <div className="relative">
+                  <select
+                    name="categoryId"
+                    required
+                    value={formData.categoryId}
+                    onChange={handleChange}
+                    className="w-full border border-slate-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-orange-500 outline-none bg-white appearance-none cursor-pointer"
+                  >
+                    <option value="" disabled>
+                      -- Pilih Kategori --
+                    </option>
+                    {categories.length === 0 && (
+                      <option disabled>Loading data...</option>
+                    )}
+
+                    {categories.map((cat) => (
+                      <option key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </option>
+                    ))}
+                  </select>
+                  {/* Ikon Panah Kecil di Kanan */}
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-500">
+                    <svg
+                      className="fill-current h-4 w-4"
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 20 20"
+                    >
+                      <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+                    </svg>
+                  </div>
+                </div>
               </div>
             </div>
 
-            {/* 3. Harga & Stok */}
+            {/* Harga & Stok */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-2">
@@ -222,7 +252,7 @@ export default function CreateGearPage() {
               </div>
             </div>
 
-            {/* 4. Deskripsi */}
+            {/* Deskripsi */}
             <div>
               <label className="block text-sm font-bold text-slate-700 mb-2">
                 Deskripsi Lengkap
@@ -231,20 +261,19 @@ export default function CreateGearPage() {
                 name="description"
                 rows={4}
                 required
-                placeholder="Jelaskan spesifikasi alat..."
+                placeholder="Spesifikasi alat..."
                 className="w-full border border-slate-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-orange-500 outline-none resize-none"
                 onChange={handleChange}
               ></textarea>
             </div>
 
-            {/* Tombol Simpan */}
             <button
               type="submit"
               disabled={isLoading}
               className="w-full bg-slate-900 text-white font-bold py-4 rounded-xl hover:bg-orange-600 transition flex items-center justify-center gap-2 disabled:opacity-50"
             >
               {isLoading ? (
-                'Mengupload...'
+                'Menyimpan...'
               ) : (
                 <>
                   <FloppyDisk size={20} weight="fill" /> Simpan Barang
