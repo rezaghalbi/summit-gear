@@ -106,7 +106,7 @@ export default function CartPage() {
                     src={
                       item.imageUrl.startsWith('http')
                         ? item.imageUrl
-                        : `${API_URL}${item.imageUrl}`
+                        : `${item.imageUrl}`
                     }
                     className="w-full h-full object-cover"
                   />

@@ -123,7 +123,7 @@ export default function UserDashboard() {
                       <div className="relative w-16 h-16 bg-slate-100 rounded-lg overflow-hidden shrink-0">
                         {item.gear.imageUrl && (
                           <Image
-                            src={`${API_URL}${item.gear.imageUrl}`}
+                            src={`${item.gear.imageUrl}`}
                             alt={item.gear.name}
                             fill
                             className="object-cover"
