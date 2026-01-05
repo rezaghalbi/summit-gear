@@ -9,10 +9,13 @@
     "skipLibCheck": true,
     "outDir": "./dist",
     "verbatimModuleSyntax": false,
-    "typeRoots": ["./node_modules/@types", "./src/types"]
+    "typeRoots": ["./node_modules/@types", "./src/types"],
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
   },
   "include": ["src/**/*"],
-  // --- BAGIAN INI KUNCINYA ---
   "ts-node": {
     "files": true,
     "transpileOnly": true
