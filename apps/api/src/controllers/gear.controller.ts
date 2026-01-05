@@ -1,35 +1,55 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
+import { supabase } from '../config/supabase';
 
 const prisma = new PrismaClient();
 
 export const createGear = async (req: Request, res: Response) => {
   try {
-    const { name, description, pricePerDay, stock, categoryId } = req.body;
-    const file = req.file;
+    const { name, pricePerDay, description, categoryId, stock } = req.body;
+    let imageUrl = '';
 
-    if (!file) {
-      return res.status(400).json({ message: 'Image is required' });
+    // LOGIKA BARU: Upload ke Supabase Storage
+    if (req.file) {
+      const file = req.file;
+      // Buat nama file unik
+      const fileName = `gear-${Date.now()}-${file.originalname.replace(
+        /\s/g,
+        '-'
+      )}`;
+
+      const { data, error } = await supabase.storage
+        .from('gears') // Nama bucket tadi
+        .upload(fileName, file.buffer, {
+          contentType: file.mimetype,
+        });
+
+      if (error) throw error;
+
+      // Ambil Public URL
+      const { data: publicData } = supabase.storage
+        .from('gears')
+        .getPublicUrl(fileName);
+
+      imageUrl = publicData.publicUrl;
     }
 
-    const newGear = await prisma.gear.create({
+    // Simpan ke Database
+    const gear = await prisma.gear.create({
       data: {
         name,
         description,
         pricePerDay: Number(pricePerDay),
         stock: Number(stock),
         categoryId: Number(categoryId),
-        imageUrl: `/images/${file.filename}`,
+        imageUrl: imageUrl, // URL dari Supabase
       },
     });
 
-    res.status(201).json({
-      message: 'Gear created successfully',
-      data: newGear,
-    });
+    res.status(201).json({ message: 'Success', data: gear });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Internal Server Error' });
+    res.status(500).json({ message: 'Error creating gear' });
   }
 };
 
