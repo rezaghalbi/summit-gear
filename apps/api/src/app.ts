@@ -18,7 +18,7 @@ app.use(
       // Atau jika mau gampang (tapi kurang aman): origin: '*'
     ],
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     allowedHeaders: ['Content-Type', 'Authorization'],
   })
 );

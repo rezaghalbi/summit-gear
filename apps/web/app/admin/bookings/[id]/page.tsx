@@ -26,12 +26,9 @@ export default function BookingDetailPage() {
   const fetchBookingDetail = async () => {
     const token = Cookies.get('token');
     try {
-      const res = await fetch(
-        `http://localhost:8000/api/bookings/${params.id}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      const res = await fetch(`${API_URL}/api/bookings/${params.id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       const json = await res.json();
 
       if (res.ok) {
