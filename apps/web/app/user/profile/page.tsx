@@ -41,7 +41,7 @@ export default function UserProfilePage() {
     const token = Cookies.get('token');
 
     try {
-      const res = await fetch('${API_URL}/api/users/profile', {
+      const res = await fetch(`${API_URL}/api/users/profile`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

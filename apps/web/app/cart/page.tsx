@@ -40,7 +40,7 @@ export default function CartPage() {
     if (duration < 1) return alert('Minimal sewa 1 hari!');
 
     try {
-      const res = await fetch('${API_URL}/api/bookings', {
+      const res = await fetch(`${API_URL}/api/bookings`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

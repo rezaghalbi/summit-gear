@@ -6,7 +6,7 @@ import Cookies from 'js-cookie';
 import Link from 'next/link';
 import Image from 'next/image';
 import { ArrowLeft, UploadSimple, FloppyDisk } from '@phosphor-icons/react';
-
+import { API_URL } from '@/lib/api';
 
 export default function CreateGearPage() {
   const router = useRouter();
@@ -29,7 +29,7 @@ export default function CreateGearPage() {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const res = await fetch('${API_URL}/api/categories');
+        const res = await fetch(`${API_URL}/api/categories`);
         const json = await res.json();
 
         if (res.ok && json.data) {
@@ -86,7 +86,7 @@ export default function CreateGearPage() {
         throw new Error('Gambar wajib diupload!');
       }
 
-      const res = await fetch('${API_URL}/api/gears', {
+      const res = await fetch(`${API_URL}/api/gears`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
         body: data,

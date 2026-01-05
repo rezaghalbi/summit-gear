@@ -34,7 +34,7 @@ export default function AdminDashboard() {
     if (!token) return router.push('/login');
 
     try {
-      const res = await fetch('${API_URL}/api/bookings', {
+      const res = await fetch(`${API_URL}/api/bookings`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const json = await res.json();

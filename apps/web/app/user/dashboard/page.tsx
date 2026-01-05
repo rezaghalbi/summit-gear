@@ -19,7 +19,7 @@ export default function UserDashboard() {
 
     const fetchMyBookings = async () => {
       try {
-        const res = await fetch('${API_URL}/api/bookings/my-bookings', {
+        const res = await fetch(`${API_URL}/api/bookings/my-bookings`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const json = await res.json();

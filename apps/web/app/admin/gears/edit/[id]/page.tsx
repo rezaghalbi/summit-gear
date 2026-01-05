@@ -28,14 +28,12 @@ export default function EditGearPage() {
     const fetchData = async () => {
       try {
         // Fetch Kategori
-        const catRes = await fetch('${API_URL}/api/categories');
+        const catRes = await fetch(`${API_URL}/api/categories`);
         const catJson = await catRes.json();
         if (catRes.ok) setCategories(catJson.data);
 
         // Fetch Detail Barang Lama berdasarkan ID di URL
-        const gearRes = await fetch(
-          `${API_URL}/api/gears/${params.id}`
-        );
+        const gearRes = await fetch(`${API_URL}/api/gears/${params.id}`);
         const gearJson = await gearRes.json();
 
         if (gearRes.ok) {

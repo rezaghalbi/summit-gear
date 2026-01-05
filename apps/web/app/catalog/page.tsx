@@ -19,7 +19,7 @@ export default function CatalogPage() {
   useEffect(() => {
     const fetchGears = async () => {
       try {
-        const res = await fetch('${API_URL}/api/gears');
+        const res = await fetch(`${API_URL}/api/gears`);
         const json = await res.json();
         if (res.ok) setGears(json.data);
       } catch (error) {

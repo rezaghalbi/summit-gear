@@ -19,7 +19,7 @@ export default function Home() {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const res = await fetch('${API_URL}/api/categories');
+        const res = await fetch(`${API_URL}/api/categories`);
         const json = await res.json();
         if (res.ok) setCategories(json.data);
       } catch (err) {
