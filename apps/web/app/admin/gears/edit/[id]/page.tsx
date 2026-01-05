@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import Cookies from 'js-cookie';
 import { ArrowLeft, FloppyDisk } from '@phosphor-icons/react';
 import Link from 'next/link';
+import { API_URL } from '@/lib/api';
 
 export default function EditGearPage() {
   const router = useRouter();
@@ -27,13 +28,13 @@ export default function EditGearPage() {
     const fetchData = async () => {
       try {
         // Fetch Kategori
-        const catRes = await fetch('http://localhost:8000/api/categories');
+        const catRes = await fetch('${API_URL}/api/categories');
         const catJson = await catRes.json();
         if (catRes.ok) setCategories(catJson.data);
 
         // Fetch Detail Barang Lama berdasarkan ID di URL
         const gearRes = await fetch(
-          `http://localhost:8000/api/gears/${params.id}`
+          `${API_URL}/api/gears/${params.id}`
         );
         const gearJson = await gearRes.json();
 
@@ -69,7 +70,7 @@ export default function EditGearPage() {
     const token = Cookies.get('token');
 
     try {
-      const res = await fetch(`http://localhost:8000/api/gears/${params.id}`, {
+      const res = await fetch(`${API_URL}/api/gears/${params.id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

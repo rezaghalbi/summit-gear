@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Cookies from 'js-cookie';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { API_URL } from '@/lib/api';
 import {
   CheckCircle,
   XCircle,
@@ -33,7 +34,7 @@ export default function AdminDashboard() {
     if (!token) return router.push('/login');
 
     try {
-      const res = await fetch('http://localhost:8000/api/bookings', {
+      const res = await fetch('${API_URL}/api/bookings', {
         headers: { Authorization: `Bearer ${token}` },
       });
       const json = await res.json();
@@ -77,17 +78,14 @@ export default function AdminDashboard() {
     if (!confirm(confirmMsg)) return;
 
     try {
-      const res = await fetch(
-        `http://localhost:8000/api/bookings/${bookingId}/status`,
-        {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ status: newStatus }),
-        }
-      );
+      const res = await fetch(`${API_URL}/api/bookings/${bookingId}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ status: newStatus }),
+      });
       if (res.ok) {
         alert('Status diperbarui!');
         fetchBookings();

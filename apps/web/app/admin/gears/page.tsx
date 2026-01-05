@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import Cookies from 'js-cookie';
 import { useRouter } from 'next/navigation';
+import { API_URL } from '@/lib/api';
 import {
   PencilSimple,
   Trash,
@@ -23,7 +24,7 @@ export default function AdminGearList() {
   const fetchGears = async () => {
     try {
       const query = search ? `?search=${search}` : '';
-      const res = await fetch(`http://localhost:8000/api/gears${query}`);
+      const res = await fetch(`${API_URL}/api/gears${query}`);
       const json = await res.json();
       if (res.ok) {
         setGears(json.data);
@@ -45,7 +46,7 @@ export default function AdminGearList() {
 
     const token = Cookies.get('token');
     try {
-      const res = await fetch(`http://localhost:8000/api/gears/${id}`, {
+      const res = await fetch(`${API_URL}/api/gears/${id}`, {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -140,7 +141,7 @@ export default function AdminGearList() {
                             src={
                               gear.imageUrl.startsWith('http')
                                 ? gear.imageUrl
-                                : `http://localhost:8000${gear.imageUrl}`
+                                : `${API_URL}${gear.imageUrl}`
                             }
                             alt={gear.name}
                             fill

@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Cookies from 'js-cookie';
 import Link from 'next/link';
 import Image from 'next/image';
+import { API_URL } from '@/lib/api';
 import {
   ArrowLeft,
   Calendar,

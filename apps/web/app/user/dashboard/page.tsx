@@ -5,6 +5,7 @@ import Cookies from 'js-cookie';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Calendar, Package, Clock, CheckCircle } from '@phosphor-icons/react';
+import { API_URL } from '@/lib/api';
 
 export default function UserDashboard() {
   const router = useRouter();
@@ -18,12 +19,9 @@ export default function UserDashboard() {
 
     const fetchMyBookings = async () => {
       try {
-        const res = await fetch(
-          'http://localhost:8000/api/bookings/my-bookings',
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
+        const res = await fetch('${API_URL}/api/bookings/my-bookings', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         const json = await res.json();
 
         if (res.ok) {
@@ -125,7 +123,7 @@ export default function UserDashboard() {
                       <div className="relative w-16 h-16 bg-slate-100 rounded-lg overflow-hidden shrink-0">
                         {item.gear.imageUrl && (
                           <Image
-                            src={`http://localhost:8000${item.gear.imageUrl}`}
+                            src={`${API_URL}${item.gear.imageUrl}`}
                             alt={item.gear.name}
                             fill
                             className="object-cover"

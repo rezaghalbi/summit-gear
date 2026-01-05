@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Cookies from 'js-cookie';
 import { ArrowLeft, Users, ShieldCheck, User } from '@phosphor-icons/react';
+import { API_URL } from '@/lib/api';
 
 export default function AdminUserList() {
   const [users, setUsers] = useState<any[]>([]);
@@ -13,7 +14,7 @@ export default function AdminUserList() {
   const fetchUsers = async () => {
     const token = Cookies.get('token');
     try {
-      const res = await fetch('http://localhost:8000/api/users', {
+      const res = await fetch('${API_URL}/api/users', {
         headers: { Authorization: `Bearer ${token}` },
       });
       const json = await res.json();

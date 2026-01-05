@@ -3,7 +3,8 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Cookies from 'js-cookie';
-import { useCart } from '../../context/CartContext'; // Pakai Context
+import { useCart } from '../../context/CartContext';
+import { API_URL } from '@/lib/api';
 import {
   Trash,
   Minus,
@@ -39,7 +40,7 @@ export default function CartPage() {
     if (duration < 1) return alert('Minimal sewa 1 hari!');
 
     try {
-      const res = await fetch('http://localhost:8000/api/bookings', {
+      const res = await fetch('${API_URL}/api/bookings', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -105,7 +106,7 @@ export default function CartPage() {
                     src={
                       item.imageUrl.startsWith('http')
                         ? item.imageUrl
-                        : `http://localhost:8000${item.imageUrl}`
+                        : `${API_URL}${item.imageUrl}`
                     }
                     className="w-full h-full object-cover"
                   />

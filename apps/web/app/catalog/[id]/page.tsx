@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
+import { API_URL } from '@/lib/api';
 import {
   ArrowLeft,
   ShoppingCart,
@@ -29,7 +30,7 @@ export default function GearDetailPage() {
   useEffect(() => {
     const fetchGear = async () => {
       try {
-        const res = await fetch(`http://localhost:8000/api/gears/${params.id}`);
+        const res = await fetch(`${API_URL}/api/gears/${params.id}`);
         const json = await res.json();
         if (res.ok) setGear(json.data);
         else router.push('/catalog');
@@ -106,7 +107,7 @@ export default function GearDetailPage() {
                   src={
                     gear.imageUrl.startsWith('http')
                       ? gear.imageUrl
-                      : `http://localhost:8000${gear.imageUrl}`
+                      : `${API_URL}${gear.imageUrl}`
                   }
                   alt={gear.name}
                   fill

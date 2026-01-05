@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Cookies from 'js-cookie';
 import { useRouter } from 'next/navigation';
+import { API_URL } from '@/lib/api';
 import {
   UserCircle,
   Envelope,
@@ -40,7 +41,7 @@ export default function UserProfilePage() {
     const token = Cookies.get('token');
 
     try {
-      const res = await fetch('http://localhost:8000/api/users/profile', {
+      const res = await fetch('${API_URL}/api/users/profile', {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

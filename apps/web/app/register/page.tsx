@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation'; // Untuk pindah halaman
 import { useState } from 'react';
+import { API_URL } from '@/lib/api';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -21,7 +22,7 @@ export default function RegisterPage() {
     setError(''); // Reset error
 
     try {
-      const res = await fetch('http://localhost:8000/api/auth/register', {
+      const res = await fetch('${API_URL}/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, email, password }),

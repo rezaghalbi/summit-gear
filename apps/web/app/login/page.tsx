@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Cookies from 'js-cookie';
 import { useRouter } from 'next/navigation';
+import { API_URL } from '@/lib/api';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -40,7 +41,7 @@ export default function LoginPage() {
     try {
       console.log('🚀 Mengirim request login...');
 
-      const res = await fetch('http://localhost:8000/api/auth/login', {
+      const res = await fetch('${API_URL}/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),

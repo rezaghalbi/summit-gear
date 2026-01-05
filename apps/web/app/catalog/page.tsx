@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { ShoppingCart, MagnifyingGlass, Funnel } from '@phosphor-icons/react';
 // Import Context
 import { useCart } from '../../context/CartContext';
+import { API_URL } from '@/lib/api';
 
 export default function CatalogPage() {
   const [gears, setGears] = useState<any[]>([]);
@@ -18,7 +19,7 @@ export default function CatalogPage() {
   useEffect(() => {
     const fetchGears = async () => {
       try {
-        const res = await fetch('http://localhost:8000/api/gears');
+        const res = await fetch('${API_URL}/api/gears');
         const json = await res.json();
         if (res.ok) setGears(json.data);
       } catch (error) {
@@ -86,7 +87,7 @@ export default function CatalogPage() {
                       src={
                         gear.imageUrl.startsWith('http')
                           ? gear.imageUrl
-                          : `http://localhost:8000${gear.imageUrl}`
+                          : `${API_URL}${gear.imageUrl}`
                       }
                       alt={gear.name}
                       fill

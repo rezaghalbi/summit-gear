@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { MagnifyingGlass, Funnel, ArrowRight } from '@phosphor-icons/react';
+import { API_URL } from '@/lib/api';
 
 export default function Home() {
   const [gears, setGears] = useState<any[]>([]);
@@ -18,7 +19,7 @@ export default function Home() {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const res = await fetch('http://localhost:8000/api/categories');
+        const res = await fetch('${API_URL}/api/categories');
         const json = await res.json();
         if (res.ok) setCategories(json.data);
       } catch (err) {
@@ -39,9 +40,7 @@ export default function Home() {
         if (search) params.append('search', search);
         if (selectedCat) params.append('cat', selectedCat);
 
-        const res = await fetch(
-          `http://localhost:8000/api/gears?${params.toString()}`
-        );
+        const res = await fetch(`${API_URL}/api/gears?${params.toString()}`);
         const json = await res.json();
 
         if (res.ok) {
@@ -170,7 +169,7 @@ export default function Home() {
                       src={
                         gear.imageUrl.startsWith('http')
                           ? gear.imageUrl
-                          : `http://localhost:8000${gear.imageUrl}`
+                          : `${API_URL}${gear.imageUrl}`
                       }
                       alt={gear.name}
                       fill
