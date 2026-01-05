@@ -10,7 +10,18 @@ import path from 'path';
 const app: Express = express();
 
 // Middleware
-app.use(cors());
+app.use(
+  cors({
+    origin: [
+      'http://localhost:3000', // Izinkan localhost (untuk testing)
+      'https://summit-gear.vercel.app', // Izinkan Domain Frontend Vercel Anda
+      // Atau jika mau gampang (tapi kurang aman): origin: '*'
+    ],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  })
+);
 app.use(express.json());
 
 // static files
